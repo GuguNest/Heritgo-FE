@@ -1,7 +1,7 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import HeritageList from '@/views/HeritageList.vue'
 </script>
 
 <template>
-  <HelloWorld />
+  <HeritageList />
 </template>
