@@ -7,6 +7,7 @@ const props = defineProps({
     required: true,
   },
 })
+const emit = defineEmits(['select'])
 
 // 종목별 포인트 색 — 칩의 작은 점으로만 은은하게 표현 (요란한 색 박스 X)
 const CATEGORY_DOT = {
@@ -42,6 +43,10 @@ const locationText = computed(
 <template>
   <article
     class="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-3xl bg-primary shadow-sm ring-1 ring-line transition-all duration-500 hover:-translate-y-1.5 hover:shadow-xl"
+    role="button"
+    tabindex="0"
+    @click="emit('select', heritage.heritage_id)"
+    @keydown.enter="emit('select', heritage.heritage_id)"
   >
     <!-- 대표 이미지 -->
     <img

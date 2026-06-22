@@ -30,4 +30,16 @@ export async function getHeritages(params = {}) {
   return data
 }
 
+/**
+ * 국가유산 상세 조회
+ * GET /api/heritages/{heritage_id}/
+ * 상세 필드(description·category_path 등)가 비어 있으면 서버가 공공 상세 API로 보강해 반환.
+ * @param {number|string} id heritage_id
+ * @returns {Promise<Object>} 상세 객체
+ */
+export async function getHeritage(id) {
+  const { data } = await api.get(`/heritages/${id}/`)
+  return data
+}
+
 export default api
