@@ -1,11 +1,24 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getHeritage } from '@/api/heritage'
+import ProfileFormModal from '@/components/ProfileFormModal.vue'
 
 const props = defineProps({
   heritageId: { type: [Number, String], required: true },
 })
-const emit = defineEmits(['back'])
+
+const router = useRouter()
+function goBack() {
+  // 직전 페이지가 있으면 뒤로, 없으면 홈
+  if (window.history.state?.back) router.back()
+  else router.push({ name: 'heritage-list' })
+}
+function goProfiles() {
+  router.push({ name: 'profile-list' })
+}
+
+const showGuideModal = ref(false)
 
 const data = ref(null)
 const loading = ref(false)
@@ -81,7 +94,7 @@ const mapUrl = computed(() => {
     <button
       class="fixed left-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-primary shadow-md backdrop-blur-md transition-transform hover:-translate-x-0.5 active:scale-95"
       aria-label="목록으로"
-      @click="emit('back')"
+      @click="goBack"
     >
       <svg
         width="20"
@@ -153,7 +166,7 @@ const mapUrl = computed(() => {
         </button>
         <button
           class="rounded-full border border-line bg-surface px-6 py-2.5 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary"
-          @click="emit('back')"
+          @click="goBack"
         >
           목록으로
         </button>
@@ -234,6 +247,26 @@ const mapUrl = computed(() => {
             <span v-if="i < breadcrumb.length - 1" class="text-line">›</span>
           </template>
         </nav>
+
+        <!-- 가이드 만들기 CTA -->
+        <section class="pt-7">
+          <div
+            class="flex flex-col gap-4 rounded-3xl bg-primary p-6 text-white sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <h2 class="font-serif text-lg">나만의 AI 가이드 만들기</h2>
+              <p class="mt-1 text-sm text-white/75">
+                인원·연령·언어·목적에 맞춰 이 곳을 안내받아요.
+              </p>
+            </div>
+            <button
+              class="shrink-0 rounded-full bg-coral px-6 py-3 text-sm font-medium text-white transition-all hover:brightness-105 active:scale-95"
+              @click="showGuideModal = true"
+            >
+              가이드 만들기
+            </button>
+          </div>
+        </section>
 
         <!-- 이야기 -->
         <section class="pt-8">
@@ -329,12 +362,26 @@ const mapUrl = computed(() => {
         <div class="pt-10 text-center">
           <button
             class="text-sm text-subtext underline-offset-4 transition-colors hover:text-primary hover:underline"
-            @click="emit('back')"
+            @click="goBack"
           >
             ← 다른 유산 둘러보기
           </button>
         </div>
       </main>
+
+      <!-- 가이드 만들기 모달 -->
+      <ProfileFormModal
+        v-if="showGuideModal"
+        :heritage-id="data.heritage_id ?? heritageId"
+        :heritage-name="data.name"
+        @close="showGuideModal = false"
+        @saved="
+          () => {
+            showGuideModal = false
+            goProfiles()
+          }
+        "
+      />
     </template>
   </div>
 </template>
