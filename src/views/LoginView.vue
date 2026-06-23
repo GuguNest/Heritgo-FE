@@ -1,9 +1,10 @@
 <script setup>
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AuthLayout from '@/components/AuthLayout.vue'
 import { getErrorMessage, login, saveSession } from '@/api/auth'
 
-const emit = defineEmits(['login-success', 'go-signup', 'home'])
+const router = useRouter()
 
 const form = reactive({ username: '', password: '' })
 const loading = ref(false)
@@ -16,7 +17,7 @@ async function submitLogin() {
   try {
     const data = await login(form)
     saveSession(data)
-    emit('login-success', data.user)
+    router.push('/')
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '로그인하지 못했어요. 아이디와 비밀번호를 다시 확인해 주세요.')
   } finally {
@@ -30,7 +31,7 @@ async function submitLogin() {
     eyebrow="WELCOME BACK"
     title="다시 만나 반가워요"
     description="로그인하고 저장해 둔 문화유산 여행을 이어가세요."
-    @home="emit('home')"
+    @home="router.push('/')"
   >
     <form class="space-y-5" @submit.prevent="submitLogin">
       <label class="block">
@@ -74,7 +75,7 @@ async function submitLogin() {
 
     <p class="mt-7 text-center text-sm text-subtext">
       아직 Heritgo 회원이 아닌가요?
-      <button type="button" class="ml-1 font-medium text-teal hover:underline" @click="emit('go-signup')">회원가입</button>
+      <button type="button" class="ml-1 font-medium text-teal hover:underline" @click="router.push('/signup')">회원가입</button>
     </p>
   </AuthLayout>
 </template>

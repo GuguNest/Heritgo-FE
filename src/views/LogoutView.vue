@@ -1,9 +1,10 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AuthLayout from '@/components/AuthLayout.vue'
 import { clearSession, getErrorMessage, getStoredUser, logout } from '@/api/auth'
 
-const emit = defineEmits(['logout-success', 'cancel', 'home'])
+const router = useRouter()
 const user = ref(getStoredUser())
 const loading = ref(false)
 const errorMessage = ref('')
@@ -15,7 +16,7 @@ async function submitLogout() {
   try {
     await logout()
     clearSession()
-    emit('logout-success')
+    router.push('/')
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.')
   } finally {
@@ -29,7 +30,7 @@ async function submitLogout() {
     eyebrow="SEE YOU AGAIN"
     :title="`${displayName}님, 잠시 떠나시나요?`"
     description="현재 기기에서 로그아웃합니다. 저장한 여행 정보는 그대로 보관돼요."
-    @home="emit('home')"
+    @home="router.push('/')"
   >
     <div class="rounded-3xl border border-line bg-bg/60 p-6 sm:p-8">
       <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal/10 text-teal">
@@ -45,7 +46,7 @@ async function submitLogout() {
       <p v-if="errorMessage" role="alert" class="mt-5 rounded-2xl bg-coral/10 px-4 py-3 text-sm leading-6 text-coral">{{ errorMessage }}</p>
 
       <div class="mt-7 flex flex-col-reverse gap-3 sm:flex-row">
-        <button type="button" class="flex-1 rounded-2xl border border-line bg-white px-5 py-3.5 text-sm font-medium text-subtext transition hover:border-teal hover:text-teal" @click="emit('cancel')">
+        <button type="button" class="flex-1 rounded-2xl border border-line bg-white px-5 py-3.5 text-sm font-medium text-subtext transition hover:border-teal hover:text-teal" @click="router.back()">
           계속 둘러보기
         </button>
         <button type="button" :disabled="loading" class="flex-1 rounded-2xl bg-primary px-5 py-3.5 text-sm font-medium text-white transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60" @click="submitLogout">

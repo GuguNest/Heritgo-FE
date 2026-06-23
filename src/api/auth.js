@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ref } from 'vue'
 
 const authApi = axios.create({
   baseURL: 'http://127.0.0.1:8000/api/users',
@@ -31,12 +32,14 @@ export function saveSession(data) {
   if (accessToken) localStorage.setItem('heritgo_access_token', accessToken)
   if (data?.refresh) localStorage.setItem('heritgo_refresh_token', data.refresh)
   if (data?.user) localStorage.setItem('heritgo_user', JSON.stringify(data.user))
+  currentUser.value = getStoredUser()
 }
 
 export function clearSession() {
   localStorage.removeItem('heritgo_access_token')
   localStorage.removeItem('heritgo_refresh_token')
   localStorage.removeItem('heritgo_user')
+  currentUser.value = null
 }
 
 export function getStoredUser() {
@@ -46,6 +49,9 @@ export function getStoredUser() {
     return null
   }
 }
+
+// 앱 전역에서 공유하는 로그인 사용자 상태 (헤더 등에서 구독)
+export const currentUser = ref(getStoredUser())
 
 export function getErrorMessage(error, fallback) {
   const data = error?.response?.data
