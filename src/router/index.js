@@ -20,6 +20,25 @@ const routes = [
     name: 'profile-list',
     component: () => import('@/views/ProfileList.vue'),
   },
+  // 인증
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/LoginView.vue'),
+    meta: { auth: true },
+  },
+  {
+    path: '/signup',
+    name: 'signup',
+    component: () => import('@/views/SignUpView.vue'),
+    meta: { auth: true },
+  },
+  {
+    path: '/logout',
+    name: 'logout',
+    component: () => import('@/views/LogoutView.vue'),
+    meta: { auth: true },
+  },
   // 알 수 없는 경로 → 홈
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]

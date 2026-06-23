@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   AGE_GROUPS,
   LANGUAGES,
@@ -10,6 +11,8 @@ import {
   canUseAuthFeature,
   LOGIN_URL,
 } from '@/api/profile'
+
+const router = useRouter()
 
 const props = defineProps({
   // 생성 모드: heritageId(+heritageName) 전달
@@ -78,7 +81,8 @@ async function onSubmit() {
 }
 
 function goLogin() {
-  window.location.href = LOGIN_URL
+  emit('close')
+  router.push(LOGIN_URL)
 }
 </script>
 

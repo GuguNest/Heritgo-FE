@@ -3,7 +3,13 @@ import axios from 'axios'
 // ── 인증 토큰 읽기 ──────────────────────────────────────────────
 // 앱이 access 토큰을 보관하는 기존 위치에서 읽어 씁니다.
 // 프로젝트의 실제 저장 키에 맞게 KEY 목록만 조정하면 됩니다.
-const TOKEN_KEYS = ['access', 'accessToken', 'access_token', 'token']
+const TOKEN_KEYS = [
+  'heritgo_access_token', // auth.js(saveSession)가 저장하는 키
+  'access',
+  'accessToken',
+  'access_token',
+  'token',
+]
 
 export function getAccessToken() {
   if (typeof window === 'undefined') return null
@@ -20,10 +26,8 @@ export function isLoggedIn() {
   return !!getAccessToken()
 }
 
-// ⚠️ 개발용 임시 플래그.
-// 로그인 기능이 아직 없을 때 인증 게이트를 우회해 가이드 만들기 폼을 바로 테스트하려면 true.
-// 팀원이 로그인(토큰 저장)을 붙이면 반드시 false로 되돌리세요.
-export const DEV_BYPASS_AUTH = true
+// 개발용 임시 인증 우회 플래그. 로그인 기능이 붙었으므로 비활성화.
+export const DEV_BYPASS_AUTH = false
 
 // 게이트 통과 여부: 우회 플래그가 켜져 있거나 실제 토큰이 있으면 통과
 export function canUseAuthFeature() {
