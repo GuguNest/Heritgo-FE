@@ -1,0 +1,35 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import HeritageList from '@/views/HeritageList.vue'
+
+const routes = [
+  {
+    path: '/',
+    name: 'heritage-list',
+    component: HeritageList,
+  },
+  {
+    path: '/heritages/:id',
+    name: 'heritage-detail',
+    // 지연 로딩
+    component: () => import('@/views/HeritageDetail.vue'),
+    // route param(id)을 컴포넌트의 heritageId prop으로 전달
+    props: (route) => ({ heritageId: route.params.id }),
+  },
+  {
+    path: '/profiles',
+    name: 'profile-list',
+    component: () => import('@/views/ProfileList.vue'),
+  },
+  // 알 수 없는 경로 → 홈
+  { path: '/:pathMatch(.*)*', redirect: '/' },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior() {
+    return { top: 0 }
+  },
+})
+
+export default router
