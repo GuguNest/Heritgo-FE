@@ -11,9 +11,6 @@ const router = useRouter()
 function openDetail(id) {
   router.push({ name: 'heritage-detail', params: { id } })
 }
-function openProfiles() {
-  router.push({ name: 'profile-list' })
-}
 
 const PAGE_SIZE = 20
 
@@ -77,31 +74,8 @@ const skeletons = reactive(Array.from({ length: 8 }))
 
 <template>
   <div class="min-h-screen bg-bg">
-    <!-- 상단 우측: 내 가이드 -->
-    <div class="mx-auto flex max-w-6xl justify-end px-6 pt-5">
-      <button
-        class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2 text-sm text-text transition-colors hover:border-teal hover:text-teal"
-        @click="openProfiles"
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-        내 가이드
-      </button>
-    </div>
-
     <!-- ── 히어로 ────────────────────────────────────────────── -->
-    <section class="mx-auto max-w-6xl px-6 pb-4 pt-8 text-center sm:pt-12">
+    <section class="mx-auto max-w-6xl px-6 pb-4 pt-14 text-center sm:pt-20">
       <p
         class="text-sm font-medium uppercase tracking-[0.35em] text-teal sm:text-base"
       >
