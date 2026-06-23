@@ -1,9 +1,10 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AuthLayout from '@/components/AuthLayout.vue'
 import { getErrorMessage, signUp } from '@/api/auth'
 
-const emit = defineEmits(['signup-success', 'go-login', 'home'])
+const router = useRouter()
 
 const form = reactive({
   username: '',
@@ -30,9 +31,8 @@ async function submitSignUp() {
 
   loading.value = true
   try {
-    const user = await signUp(form)
+    await signUp(form)
     success.value = true
-    emit('signup-success', user)
   } catch (error) {
     errorMessage.value = getErrorMessage(error, '회원가입을 완료하지 못했어요. 입력한 내용을 다시 확인해 주세요.')
   } finally {
@@ -46,7 +46,7 @@ async function submitSignUp() {
     eyebrow="BEGIN YOUR JOURNEY"
     title="여행을 함께 시작해요"
     description="간단한 정보만 입력하면 Heritgo의 문화유산 여행을 만날 수 있어요."
-    @home="emit('home')"
+    @home="router.push('/')"
   >
     <div v-if="success" class="py-8 text-center">
       <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal/10 text-teal">
@@ -56,7 +56,7 @@ async function submitSignUp() {
       </span>
       <h2 class="mt-5 font-serif text-2xl font-bold text-text">가입이 완료되었어요</h2>
       <p class="mt-2 text-sm leading-6 text-subtext">이제 로그인하고 첫 여행을 시작해 보세요.</p>
-      <button type="button" class="mt-7 rounded-2xl bg-primary px-7 py-3.5 text-sm font-medium text-white hover:brightness-110" @click="emit('go-login')">
+      <button type="button" class="mt-7 rounded-2xl bg-primary px-7 py-3.5 text-sm font-medium text-white hover:brightness-110" @click="router.push('/login')">
         로그인하러 가기
       </button>
     </div>
@@ -122,7 +122,7 @@ async function submitSignUp() {
 
     <p v-if="!success" class="mt-6 text-center text-sm text-subtext">
       이미 계정이 있나요?
-      <button type="button" class="ml-1 font-medium text-teal hover:underline" @click="emit('go-login')">로그인</button>
+      <button type="button" class="ml-1 font-medium text-teal hover:underline" @click="router.push('/login')">로그인</button>
     </p>
   </AuthLayout>
 </template>

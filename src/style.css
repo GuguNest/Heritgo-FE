@@ -35,6 +35,18 @@ body {
   min-height: 100vh;
 }
 
+/* Tailwind v4는 버튼 기본 커서를 자동 지정하지 않으므로 직접 지정 */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  a {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
 @layer components {
   .auth-input {
     @apply w-full rounded-2xl border border-line bg-bg/60 px-4 py-3.5 text-sm text-text outline-none transition placeholder:text-subtext/55 focus:border-teal focus:bg-white focus:ring-4 focus:ring-teal/10;

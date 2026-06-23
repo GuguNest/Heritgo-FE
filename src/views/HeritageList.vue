@@ -1,9 +1,16 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getHeritages } from '@/api/heritage'
 import HeritageCard from '@/components/HeritageCard.vue'
 
-const emit = defineEmits(['open'])
+// KeepAlive include 매칭용 컴포넌트 이름
+defineOptions({ name: 'HeritageList' })
+
+const router = useRouter()
+function openDetail(id) {
+  router.push({ name: 'heritage-detail', params: { id } })
+}
 
 const PAGE_SIZE = 20
 
@@ -68,7 +75,7 @@ const skeletons = reactive(Array.from({ length: 8 }))
 <template>
   <div class="min-h-screen bg-bg">
     <!-- ── 히어로 ────────────────────────────────────────────── -->
-    <section class="mx-auto max-w-6xl px-6 pb-4 pt-16 text-center sm:pt-24">
+    <section class="mx-auto max-w-6xl px-6 pb-4 pt-14 text-center sm:pt-20">
       <p
         class="text-sm font-medium uppercase tracking-[0.35em] text-teal sm:text-base"
       >
@@ -232,7 +239,7 @@ const skeletons = reactive(Array.from({ length: 8 }))
             v-for="item in items"
             :key="item.heritage_id"
             :heritage="item"
-            @select="emit('open', $event)"
+            @select="openDetail"
           />
         </div>
 
