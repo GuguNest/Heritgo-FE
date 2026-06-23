@@ -5,6 +5,7 @@ import HeritageDetail from '@/views/HeritageDetail.vue'
 import LoginView from '@/views/LoginView.vue'
 import SignUpView from '@/views/SignUpView.vue'
 import LogoutView from '@/views/LogoutView.vue'
+import ChatbotView from '@/views/ChatbotView.vue'
 import { getStoredUser } from '@/api/auth'
 
 const page = ref('home')
@@ -58,6 +59,7 @@ function handleLogout() {
     @cancel="goHome"
     @home="goHome"
   />
+  <ChatbotView v-else-if="page === 'chatbot'" @home="goHome" />
 
   <div v-else>
     <header class="sticky top-0 z-40 border-b border-line/80 bg-bg/90 backdrop-blur-xl">
@@ -74,6 +76,12 @@ function handleLogout() {
         </button>
 
         <div class="flex items-center gap-2">
+          <button
+            class="rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-teal transition hover:border-teal hover:bg-teal/5"
+            @click="move('chatbot')"
+          >
+            챗봇 테스트
+          </button>
           <template v-if="user">
             <span class="hidden text-sm text-subtext sm:inline">
               <strong class="font-medium text-text">{{ user.nickname || user.username }}</strong>님, 반가워요
