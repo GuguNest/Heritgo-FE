@@ -113,7 +113,7 @@ async function submitQuestion() {
   try {
     const result = await sendMessage(selectedSession.value.session_id, content)
     messages.value.push(result.user_message, result.assistant_message)
-    relatedHeritages.value = result.related_heritages
+    relatedHeritages.value = result.related_heritages ?? []
     await scrollToBottom()
   } catch (requestError) {
     question.value = content
@@ -142,7 +142,7 @@ onMounted(() => {
     <div v-if="!authenticated" class="mx-auto flex min-h-screen max-w-md items-center px-5">
       <form class="w-full rounded-[2rem] border border-[#e2dbcf] bg-white p-8 shadow-sm" @submit.prevent="submitLogin">
         <p class="text-xs font-semibold tracking-[0.28em] text-[#3b7c82]">HERITGO CHATBOT</p>
-        <h1 class="mt-3 font-serif text-3xl">문화유산 대화 테스트</h1>
+        <h1 class="mt-3 font-serif text-3xl">문화유산 대화</h1>
         <p class="mt-2 text-sm leading-6 text-[#6e6a64]">실제 계정의 아이디(username)와 비밀번호로 로그인하세요.</p>
         <div v-if="error" class="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>
         <div class="mt-7 grid gap-4">
@@ -178,7 +178,7 @@ onMounted(() => {
       <section class="flex min-h-screen min-w-0 flex-col">
         <header class="border-b border-[#ddd5c8] bg-white/80 px-6 py-5 backdrop-blur">
           <h2 class="font-serif text-2xl">{{ selectedSession?.title ?? '대화를 선택해 주세요' }}</h2>
-          <p class="mt-1 text-xs text-[#7a746d]">LLM 미연결 테스트 · 질문 저장과 문화유산 검색 결과를 확인합니다.</p>
+          <p class="mt-1 text-xs text-[#7a746d]">OpenAI 기반 답변과 관련 문화유산 정보를 확인합니다.</p>
         </header>
         <div v-if="error" class="mx-6 mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>
 
@@ -195,8 +195,8 @@ onMounted(() => {
             <div v-for="message in messages" :key="message.id" class="flex" :class="message.sender_type === 'user' ? 'justify-end' : 'justify-start'">
               <div class="max-w-[82%] rounded-3xl px-5 py-4 text-sm leading-7 shadow-sm" :class="message.sender_type === 'user' ? 'rounded-br-lg bg-[#223a5e] text-white' : 'rounded-bl-lg border border-[#e1d9cd] bg-white'">
                 <template v-if="message.status === 'pending'">
-                  <div class="flex items-center gap-2 text-[#6e6a64]"><span class="h-2 w-2 animate-pulse rounded-full bg-[#e58f6a]"></span><span>LLM 연결 대기 중</span></div>
-                  <p class="mt-1 text-xs text-[#9a938a]">현재는 문화유산 검색 결과까지만 확인할 수 있습니다.</p>
+                  <div class="flex items-center gap-2 text-[#6e6a64]"><span class="h-2 w-2 animate-pulse rounded-full bg-[#e58f6a]"></span><span>답변 생성 중</span></div>
+                  <p class="mt-1 text-xs text-[#9a938a]">OpenAI 답변을 준비하고 있습니다.</p>
                 </template>
                 <template v-else-if="message.status === 'failed'">
                   <p class="font-medium text-red-700">답변 생성에 실패했습니다.</p>
@@ -229,7 +229,7 @@ onMounted(() => {
             <textarea v-model="question" rows="1" maxlength="2000" placeholder="궁금한 문화유산이나 여행 조건을 입력하세요" class="min-h-12 flex-1 resize-none rounded-2xl bg-[#f4f0e8] px-4 py-3 outline-none focus:ring-2 focus:ring-[#3b7c82]/30" @keydown.enter.exact.prevent="submitQuestion"></textarea>
             <button :disabled="sending || !question.trim()" class="rounded-2xl bg-[#e58f6a] px-6 font-medium text-white disabled:opacity-40">{{ sending ? '전송 중…' : '전송' }}</button>
           </form>
-          <p v-if="hasPendingAnswer" class="mx-auto mt-2 max-w-4xl text-xs text-[#918a82]">기존 pending 메시지는 LLM 연동 후 완료 상태로 갱신됩니다.</p>
+          <p v-if="hasPendingAnswer" class="mx-auto mt-2 max-w-4xl text-xs text-[#918a82]">답변 생성 중인 메시지는 잠시 후 완료 상태로 갱신됩니다.</p>
         </footer>
       </section>
     </div>
