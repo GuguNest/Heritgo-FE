@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getHeritage } from '@/api/heritage'
-import ProfileFormModal from '@/components/ProfileFormModal.vue'
+import GuideFlowModal from '@/components/GuideFlowModal.vue'
 
 const props = defineProps({
   heritageId: { type: [Number, String], required: true },
@@ -14,8 +14,9 @@ function goBack() {
   if (window.history.state?.back) router.back()
   else router.push({ name: 'heritage-list' })
 }
-function goProfiles() {
-  router.push({ name: 'profile-list' })
+function openGuide(guideId) {
+  showGuideModal.value = false
+  if (guideId) router.push(`/guides/${guideId}`)
 }
 
 const showGuideModal = ref(false)
@@ -64,12 +65,37 @@ const breadcrumb = computed(() => {
   return [d.category_name, d.kind_name].filter(Boolean)
 })
 
+// 관리번호(asno) → 지정 호수 문자열. 4자리씩 0패딩된 형태(예: 01170000)도 처리.
+function designationNo(asno) {
+  if (!asno) return ''
+  let s = String(asno).trim()
+  if (/^\d{8}$/.test(s)) {
+    const main = parseInt(s.slice(0, 4), 10)
+    const sub = parseInt(s.slice(4), 10)
+    s = sub ? `${main}-${sub}` : `${main}`
+  } else if (/^\d+$/.test(s)) {
+    s = String(parseInt(s, 10))
+  } else if (!/^\d+(-\d+)?$/.test(s)) {
+    return '' // 숫자 형태가 아니면 호수 표기 생략
+  }
+  return s
+}
+
+// 종목 + 지정번호 (예: 국보 제1호)
+const designation = computed(() => {
+  const d = data.value
+  if (!d) return ''
+  const no = designationNo(d.asno)
+  if (d.kind_name) return no ? `${d.kind_name} 제${no}호` : d.kind_name
+  return d.category_name || ''
+})
+
 // 정보 행 (값 있는 것만 노출)
 const infoRows = computed(() => {
   const d = data.value
   if (!d) return []
   return [
-    { icon: 'tag', label: '종목', value: d.kind_name || d.category_name },
+    { icon: 'tag', label: '종목', value: designation.value },
     { icon: 'pin', label: '소재지', value: d.address || locationText.value },
     { icon: 'clock', label: '시대', value: d.origin_period },
     { icon: 'office', label: '관리기관', value: d.admin_name },
@@ -244,7 +270,7 @@ const mapUrl = computed(() => {
         >
           <template v-for="(c, i) in breadcrumb" :key="i">
             <span>{{ c }}</span>
-            <span v-if="i < breadcrumb.length - 1" class="text-line">›</span>
+            <span v-if="i < breadcrumb.length - 1" class="text-teal">›</span>
           </template>
         </nav>
 
@@ -254,37 +280,34 @@ const mapUrl = computed(() => {
             class="flex flex-col gap-4 rounded-3xl bg-primary p-6 text-white sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
-              <h2 class="font-serif text-lg">나만의 AI 가이드 만들기</h2>
+              <h2 class="font-serif text-lg">나만의 AI 음성 가이드</h2>
               <p class="mt-1 text-sm text-white/75">
-                인원·연령·언어·목적에 맞춰 이 곳을 안내받아요.
+                인원·연령·언어에 맞춘 해설을 듣고 떠나보세요.
               </p>
             </div>
             <button
-              class="shrink-0 rounded-full bg-coral px-6 py-3 text-sm font-medium text-white transition-all hover:brightness-105 active:scale-95"
+              class="flex shrink-0 items-center justify-center gap-2 rounded-full bg-coral px-6 py-3 text-sm font-medium text-white transition-all hover:brightness-105 active:scale-95"
               @click="showGuideModal = true"
             >
-              가이드 만들기
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 10v4M7 7v10M12 4v16M17 8v8M21 11v2" />
+              </svg>
+              가이드 시작하기
             </button>
           </div>
         </section>
 
-        <!-- 이야기 -->
-        <section class="pt-8">
-          <h2 class="font-serif text-xl text-text">이야기</h2>
-          <p
-            v-if="data.description"
-            class="mt-4 whitespace-pre-line text-[15px] leading-[1.9] text-text/90"
-          >
-            {{ data.description }}
-          </p>
-          <p v-else class="mt-4 text-sm leading-relaxed text-subtext">
-            아직 소개 글이 준비되지 않았어요. 아래 정보를 참고해 직접 만나보는
-            건 어떨까요?
-          </p>
-        </section>
-
         <!-- 정보 -->
-        <section v-if="infoRows.length" class="pt-10">
+        <section v-if="infoRows.length" class="pt-8">
           <h2 class="font-serif text-xl text-text">한눈에 보기</h2>
           <dl class="mt-4 divide-y divide-line rounded-2xl bg-surface px-5 ring-1 ring-line">
             <div
@@ -333,6 +356,20 @@ const mapUrl = computed(() => {
           </dl>
         </section>
 
+        <!-- 이야기 -->
+        <section class="pt-10">
+          <h2 class="font-serif text-xl text-text">이야기</h2>
+          <p
+            v-if="data.description"
+            class="mt-4 whitespace-pre-line text-[15px] leading-[1.9] text-text/90"
+          >
+            {{ data.description }}
+          </p>
+          <p v-else class="mt-4 text-sm leading-relaxed text-subtext">
+            아직 소개 글이 준비되지 않았어요. 직접 만나보는 건 어떨까요?
+          </p>
+        </section>
+
         <!-- 지도 -->
         <section v-if="mapUrl" class="pt-8">
           <a
@@ -369,18 +406,13 @@ const mapUrl = computed(() => {
         </div>
       </main>
 
-      <!-- 가이드 만들기 모달 -->
-      <ProfileFormModal
+      <!-- 가이드 시작하기 모달 -->
+      <GuideFlowModal
         v-if="showGuideModal"
         :heritage-id="data.heritage_id ?? heritageId"
         :heritage-name="data.name"
         @close="showGuideModal = false"
-        @saved="
-          () => {
-            showGuideModal = false
-            goProfiles()
-          }
-        "
+        @open-guide="openGuide"
       />
     </template>
   </div>

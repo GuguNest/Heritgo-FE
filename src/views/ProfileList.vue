@@ -9,7 +9,9 @@ import {
   DURATIONS,
   labelOf,
 } from '@/api/profile'
+import { getHeritage } from '@/api/heritage'
 import ProfileFormModal from '@/components/ProfileFormModal.vue'
+import HeritagePickerModal from '@/components/HeritagePickerModal.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -23,15 +25,30 @@ function openHeritage(id) {
 const profiles = ref([])
 const loading = ref(false)
 const error = ref(false)
+const heritageNames = ref({}) // { [heritage_id]: name }
 
 const editing = ref(null) // 수정 중인 프로필
 const editLoadingId = ref(null)
+
+// 새 프로필 만들기: 유산 선택 → 조건 입력
+const showPicker = ref(false)
+const creatingFor = ref(null) // { heritageId, heritageName }
+
+function onHeritagePicked(h) {
+  showPicker.value = false
+  creatingFor.value = { heritageId: h.heritage_id, heritageName: h.name }
+}
+function onCreated() {
+  creatingFor.value = null
+  fetchProfiles()
+}
 
 async function fetchProfiles() {
   loading.value = true
   error.value = false
   try {
     profiles.value = await getProfiles()
+    resolveHeritageNames()
   } catch (e) {
     error.value = true
     profiles.value = []
@@ -40,10 +57,30 @@ async function fetchProfiles() {
   }
 }
 
+// 프로필에 연결된 유산명을 채워 넣음 (응답엔 id만 있어서 별도 조회)
+async function resolveHeritageNames() {
+  const ids = [
+    ...new Set(profiles.value.map((p) => p.heritage_id).filter(Boolean)),
+  ]
+  await Promise.all(
+    ids.map(async (id) => {
+      if (heritageNames.value[id]) return
+      try {
+        const h = await getHeritage(id)
+        heritageNames.value = { ...heritageNames.value, [id]: h?.name || '' }
+      } catch {
+        /* 이름 조회 실패는 무시 */
+      }
+    }),
+  )
+}
+
 onMounted(fetchProfiles)
 
 function heritageNameOf(p) {
-  return p.heritage_name || p.heritage?.name || `국가유산 #${p.heritage_id}`
+  return (
+    p.heritage_name || p.heritage?.name || heritageNames.value[p.heritage_id] || '연결된 유산'
+  )
 }
 
 async function openEdit(p) {
@@ -89,12 +126,33 @@ function onSaved() {
       <p
         class="text-sm font-medium uppercase tracking-[0.3em] text-teal"
       >
-        My Guides
+        Guide Profiles
       </p>
-      <h1 class="mt-3 font-serif text-3xl text-text sm:text-4xl">내 가이드</h1>
+      <h1 class="mt-3 font-serif text-3xl text-text sm:text-4xl">
+        가이드 프로필
+      </h1>
       <p class="mt-2 text-sm text-subtext">
-        저장해 둔 여행 조건으로 언제든 맞춤 가이드를 받아보세요.
+        유산별로 저장해 둔 여행 조건이에요. 이 조건으로 맞춤 가이드를 만들 수
+        있어요.
       </p>
+      <button
+        class="mt-5 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-white transition hover:brightness-110 active:scale-95"
+        @click="showPicker = true"
+      >
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        새 프로필 만들기
+      </button>
     </header>
 
     <main class="mx-auto max-w-4xl px-6 pt-8">
@@ -145,15 +203,15 @@ function onSaved() {
             <path d="M12 5v14M5 12h14" />
           </svg>
         </div>
-        <h3 class="font-serif text-xl text-text">아직 만든 가이드가 없어요</h3>
+        <h3 class="font-serif text-xl text-text">아직 만든 프로필이 없어요</h3>
         <p class="mt-2 text-sm text-subtext">
-          유산 상세 페이지에서 ‘가이드 만들기’로 첫 가이드를 만들어 보세요.
+          유산을 골라 첫 여행 조건을 만들어 보세요.
         </p>
         <button
           class="mt-6 rounded-full bg-coral px-6 py-2.5 text-sm font-medium text-white transition-all hover:brightness-105 active:scale-95"
-          @click="goHome"
+          @click="showPicker = true"
         >
-          유산 둘러보기
+          새 프로필 만들기
         </button>
       </div>
 
@@ -214,6 +272,22 @@ function onSaved() {
       :profile="editing"
       @close="editing = null"
       @saved="onSaved"
+    />
+
+    <!-- 새 프로필: 유산 선택 -->
+    <HeritagePickerModal
+      v-if="showPicker"
+      @close="showPicker = false"
+      @select="onHeritagePicked"
+    />
+
+    <!-- 새 프로필: 조건 입력 -->
+    <ProfileFormModal
+      v-if="creatingFor"
+      :heritage-id="creatingFor.heritageId"
+      :heritage-name="creatingFor.heritageName"
+      @close="creatingFor = null"
+      @saved="onCreated"
     />
   </div>
 </template>

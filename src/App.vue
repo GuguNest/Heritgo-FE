@@ -124,7 +124,7 @@ function go(path) {
               <div class="my-1 border-t border-line/70"></div>
               <button
                 class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-text transition hover:bg-line/50"
-                @click="go('/profiles')"
+                @click="go('/guides')"
               >
                 <svg
                   width="17"
@@ -137,10 +137,29 @@ function go(path) {
                   stroke-linejoin="round"
                   class="text-teal"
                 >
-                  <path d="M9 11l3 3L22 4" />
-                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  <path d="M3 10v4M7 7v10M12 4v16M17 8v8M21 11v2" />
                 </svg>
                 내 가이드
+              </button>
+              <button
+                class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-text transition hover:bg-line/50"
+                @click="go('/profiles')"
+              >
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="text-subtext"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                가이드 프로필
               </button>
               <button
                 class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-text transition hover:bg-line/50"

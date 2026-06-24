@@ -25,6 +25,18 @@ const routes = [
     name: 'chatbot',
     component: () => import('@/views/ChatbotView.vue'),
   },
+  // 가이드(생성물)
+  {
+    path: '/guides',
+    name: 'guide-list',
+    component: () => import('@/views/GuideList.vue'),
+  },
+  {
+    path: '/guides/:id',
+    name: 'guide-detail',
+    component: () => import('@/views/GuideDetailView.vue'),
+    props: (route) => ({ guideId: route.params.id }),
+  },
   // 인증
   {
     path: '/login',
