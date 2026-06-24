@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { attachAuthRefresh } from '@/api/auth'
 
 // ── 인증 토큰 읽기 ──────────────────────────────────────────────
 // 앱이 access 토큰을 보관하는 기존 위치에서 읽어 씁니다.
@@ -56,6 +57,9 @@ api.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
+
+// 401/403 → refresh → 원요청 재시도
+attachAuthRefresh(api)
 
 // 서버 응답이 아예 없으면(백엔드 off) network 에러로 표시
 function isNetworkError(err) {
