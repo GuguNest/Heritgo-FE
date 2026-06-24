@@ -18,7 +18,7 @@ defineEmits(['home'])
         <div class="relative hidden min-h-[680px] flex-col justify-between overflow-hidden bg-primary p-12 text-white lg:flex">
           <div
             class="absolute inset-0 opacity-40"
-            style="background: radial-gradient(circle at 20% 15%, #3b7c82 0, transparent 34%), radial-gradient(circle at 90% 85%, #e58f6a 0, transparent 28%)"
+            style="background: radial-gradient(circle at 20% 15%, #2f7d74 0, transparent 34%), radial-gradient(circle at 90% 85%, #f0a06f 0, transparent 28%)"
           ></div>
 
           <button class="relative inline-flex items-center gap-3 self-start" @click="$emit('home')">
