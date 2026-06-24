@@ -2,7 +2,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getHeritages } from '@/api/heritage'
+import { getHomeRecommendations } from '@/api/recommendation'
 import HeritageCard from '@/components/HeritageCard.vue'
+import RecommendationRow from '@/components/RecommendationRow.vue'
 
 // KeepAlive include 매칭용 컴포넌트 이름
 defineOptions({ name: 'HeritageList' })
@@ -10,6 +12,37 @@ defineOptions({ name: 'HeritageList' })
 const router = useRouter()
 function openDetail(id) {
   router.push({ name: 'heritage-detail', params: { id } })
+}
+
+// ── 추천 섹션 (home 집계 한 번으로 인기/주변/맞춤) ──────────────
+const rec = reactive({ popular: [], nearby: [], for_me: [] })
+const recLoading = ref(false)
+
+function getPosition() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null)
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null), // 거부/실패 시 위치 없이 진행
+      { timeout: 5000, maximumAge: 600000 },
+    )
+  })
+}
+
+async function fetchRecommendations() {
+  recLoading.value = true
+  try {
+    const pos = await getPosition()
+    const data = await getHomeRecommendations(pos || {})
+    rec.popular = data.popular
+    rec.nearby = data.nearby
+    rec.for_me = data.for_me
+  } catch {
+    /* 추천 실패는 조용히 무시 (본문 목록은 정상 동작) */
+  } finally {
+    recLoading.value = false
+  }
 }
 
 const PAGE_SIZE = 20
@@ -70,7 +103,10 @@ function goPage(p) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-onMounted(fetchList)
+onMounted(() => {
+  fetchList()
+  fetchRecommendations()
+})
 
 const skeletons = reactive(Array.from({ length: 8 }))
 </script>
@@ -141,8 +177,37 @@ const skeletons = reactive(Array.from({ length: 8 }))
       </div>
     </section>
 
+    <!-- ── 추천 섹션 (검색 중이 아닐 때만) ───────────────────── -->
+    <div
+      v-if="!submittedKeyword"
+      class="mx-auto max-w-6xl space-y-9 px-6 pt-6"
+    >
+      <RecommendationRow
+        title="인기 유산"
+        subtitle="지금 많이 찾는 곳"
+        icon="fire"
+        :items="rec.popular"
+        :loading="recLoading"
+        @select="openDetail"
+      />
+      <RecommendationRow
+        title="내 주변 유산"
+        subtitle="가까운 곳부터 둘러보기"
+        icon="pin"
+        :items="rec.nearby"
+        @select="openDetail"
+      />
+      <RecommendationRow
+        title="맞춤 추천"
+        subtitle="가이드 이력을 바탕으로"
+        icon="spark"
+        :items="rec.for_me"
+        @select="openDetail"
+      />
+    </div>
+
     <!-- ── 목록 ──────────────────────────────────────────────── -->
-    <main class="mx-auto max-w-6xl px-6 pb-20 pt-10">
+    <main class="mx-auto max-w-6xl px-6 pb-20 pt-12">
       <!-- 섹션 헤더 -->
       <div
         v-if="!loading && !error && items.length"
@@ -150,7 +215,7 @@ const skeletons = reactive(Array.from({ length: 8 }))
       >
         <h2 class="font-serif text-xl text-text sm:text-2xl">
           <template v-if="submittedKeyword">‘{{ submittedKeyword }}’ 여행</template>
-          <template v-else>지금 떠나기 좋은 곳</template>
+          <template v-else>전체 둘러보기</template>
         </h2>
         <span class="text-sm text-subtext">{{ total }}곳</span>
       </div>
