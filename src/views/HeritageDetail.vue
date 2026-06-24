@@ -216,8 +216,8 @@ const mapUrl = computed(() => {
           style="
             background: radial-gradient(
               120% 100% at 50% 0%,
-              #3b7c82 0%,
-              #223a5e 70%
+              #2f7d74 0%,
+              #2a2622 70%
             );
           "
         ></div>
@@ -228,7 +228,7 @@ const mapUrl = computed(() => {
         <div class="absolute inset-x-0 bottom-0 mx-auto max-w-3xl px-6 pb-8">
           <span
             v-if="data.category_name"
-            class="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-primary shadow-sm backdrop-blur-md"
+            class="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-text shadow-sm backdrop-blur-md"
           >
             <span class="h-1.5 w-1.5 rounded-full bg-coral"></span>
             {{ data.category_name }}
@@ -277,13 +277,34 @@ const mapUrl = computed(() => {
         <!-- 가이드 만들기 CTA -->
         <section class="pt-7">
           <div
-            class="flex flex-col gap-4 rounded-3xl bg-primary p-6 text-white sm:flex-row sm:items-center sm:justify-between"
+            class="flex flex-col gap-4 rounded-3xl border border-line bg-surface p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between"
           >
-            <div>
-              <h2 class="font-serif text-lg">나만의 AI 음성 가이드</h2>
-              <p class="mt-1 text-sm text-white/75">
-                인원·연령·언어에 맞춘 해설을 듣고 떠나보세요.
-              </p>
+            <div class="flex items-start gap-3.5">
+              <span
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                  <path
+                    d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"
+                  />
+                </svg>
+              </span>
+              <div>
+                <h2 class="font-serif text-lg text-text">나만의 AI 음성 가이드</h2>
+                <p class="mt-1 text-sm text-subtext">
+                  인원·연령·언어에 맞춘 해설을 듣고 떠나보세요.
+                </p>
+              </div>
             </div>
             <button
               class="flex shrink-0 items-center justify-center gap-2 rounded-full bg-coral px-6 py-3 text-sm font-medium text-white transition-all hover:brightness-105 active:scale-95"
