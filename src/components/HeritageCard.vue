@@ -11,21 +11,21 @@ const emit = defineEmits(['select'])
 
 // 종목별 포인트 색 — 칩의 작은 점으로만 은은하게 표현 (요란한 색 박스 X)
 const CATEGORY_DOT = {
-  국보: '#223a5e', // primary
-  보물: '#c2924a', // muted gold
-  사적: '#e58f6a', // coral
-  명승: '#3b7c82', // teal
+  국보: '#b3801f', // deep gold
+  보물: '#c99a3f', // gold
+  사적: '#e2682e', // 주황
+  명승: '#2f7d74', // teal
   천연기념물: '#5a8c5e',
-  국가무형유산: '#9a7aa6',
-  국가민속문화유산: '#b3795a',
-  등록문화유산: '#6e6a64',
+  국가무형유산: '#9a6a8c',
+  국가민속문화유산: '#a06a3a',
+  등록문화유산: '#4f6b66',
 }
-const PALETTE = ['#3b7c82', '#e58f6a', '#223a5e', '#c2924a', '#5a8c5e']
+const PALETTE = ['#e2682e', '#2f7d74', '#c99a3f', '#5a8c5e', '#9a6a8c']
 
 const dotColor = computed(() => {
   const name = props.heritage.category_name || ''
   if (CATEGORY_DOT[name]) return CATEGORY_DOT[name]
-  if (!name) return '#3b7c82'
+  if (!name) return '#2f7d74'
   let hash = 0
   for (let i = 0; i < name.length; i++)
     hash = (hash * 31 + name.charCodeAt(i)) >>> 0
@@ -42,7 +42,7 @@ const locationText = computed(
 
 <template>
   <article
-    class="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-3xl bg-primary shadow-sm ring-1 ring-line transition-all duration-500 hover:-translate-y-1.5 hover:shadow-xl"
+    class="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-3xl bg-text/80 shadow-sm ring-1 ring-line transition-all duration-500 hover:-translate-y-1.5 hover:shadow-xl"
     role="button"
     tabindex="0"
     @click="emit('select', heritage.heritage_id)"
@@ -64,8 +64,8 @@ const locationText = computed(
       style="
         background: radial-gradient(
           120% 100% at 50% 0%,
-          #3b7c82 0%,
-          #223a5e 70%
+          #2f7d74 0%,
+          #2a2622 70%
         );
       "
     >
@@ -94,7 +94,7 @@ const locationText = computed(
     <!-- 카테고리 칩 (프로스티드 글래스) -->
     <span
       v-if="heritage.category_name"
-      class="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-primary shadow-sm backdrop-blur-md"
+      class="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-text shadow-sm backdrop-blur-md"
     >
       <span
         class="h-1.5 w-1.5 rounded-full"
