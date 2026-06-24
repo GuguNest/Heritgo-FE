@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getHeritage } from '@/api/heritage'
 import GuideFlowModal from '@/components/GuideFlowModal.vue'
+import KakaoMap from '@/components/KakaoMap.vue'
 
 const props = defineProps({
   heritageId: { type: [Number, String], required: true },
@@ -105,12 +106,36 @@ const infoRows = computed(() => {
 const mapUrl = computed(() => {
   const d = data.value
   if (!d) return null
-  if (d.latitude != null && d.longitude != null)
-    return `https://www.google.com/maps/search/?api=1&query=${d.latitude},${d.longitude}`
+  const lat = pickCoordinateValue(d.latitude, d.lat, d.y, d.map_y)
+  const lng = pickCoordinateValue(d.longitude, d.lng, d.lon, d.x, d.map_x)
+  if (lat !== null && lng !== null)
+    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
   const q = [d.name, d.address || locationText.value].filter(Boolean).join(' ')
   return q
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
     : null
+})
+
+function pickCoordinateValue(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue
+    const numberValue = Number(value)
+    if (Number.isFinite(numberValue)) return numberValue
+  }
+  return null
+}
+
+const mapCoordinates = computed(() => {
+  const d = data.value
+  if (!d) return null
+
+  const lat = pickCoordinateValue(d.latitude, d.lat, d.y, d.map_y)
+  const lng = pickCoordinateValue(d.longitude, d.lng, d.lon, d.x, d.map_x)
+
+  if (lat === null || lng === null) return null
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null
+
+  return { lat, lng }
 })
 </script>
 
@@ -392,7 +417,28 @@ const mapUrl = computed(() => {
         </section>
 
         <!-- 지도 -->
-        <section v-if="mapUrl" class="pt-8">
+        <section v-if="mapCoordinates" class="pt-8">
+          <div class="mb-4 flex items-end justify-between gap-3">
+            <h2 class="font-serif text-xl text-text">위치</h2>
+            <a
+              v-if="mapUrl"
+              :href="mapUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm font-medium text-teal underline-offset-4 transition-colors hover:text-primary hover:underline"
+            >
+              외부 지도에서 보기
+            </a>
+          </div>
+          <KakaoMap
+            :lat="mapCoordinates.lat"
+            :lng="mapCoordinates.lng"
+            :title="data.name"
+            :address="data.address || locationText"
+          />
+        </section>
+
+        <section v-else-if="mapUrl" class="pt-8">
           <a
             :href="mapUrl"
             target="_blank"
