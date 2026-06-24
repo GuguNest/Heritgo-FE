@@ -3,14 +3,15 @@
 
 /* ── 감성 여행 앱 무드: 한국적 색감을 은은하게 ─────────────────── */
 @theme {
-  --color-bg: #fcfaf6; /* Background */
+  --color-bg: #fbf6ee; /* Background (warm ivory) */
   --color-surface: #ffffff; /* Surface */
-  --color-primary: #223a5e; /* Primary (navy) */
-  --color-teal: #3b7c82; /* Accent Teal */
-  --color-coral: #e58f6a; /* Accent Coral */
-  --color-text: #1f1f1f; /* Text Main */
-  --color-subtext: #6e6a64; /* Text Sub */
-  --color-line: #ece7de; /* Border */
+  --color-primary: #e2682e; /* Primary — 단청 주황 (메인 포인트) */
+  --color-teal: #2f7d74; /* Accent Teal (보조) */
+  --color-gold: #c99a3f; /* Accent Gold (강조) */
+  --color-coral: #e2682e; /* Warm CTA — 메인과 동일 주황 계열 */
+  --color-text: #2a2622; /* Text Main (먹색) */
+  --color-subtext: #6f675b; /* Text Sub */
+  --color-line: #ebe3d5; /* Border */
 
   --font-serif: 'Gowun Batang', serif;
   --font-sans: 'Noto Sans KR', system-ui, sans-serif;
