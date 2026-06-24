@@ -83,7 +83,7 @@ const skeletons = reactive(Array.from({ length: 8 }))
         class="text-sm font-medium uppercase tracking-[0.35em] text-teal sm:text-base"
       >
         HERITGO
-        <span class="text-subtext/70">· Korean Heritage</span>
+        <span class="text-subtext/70">· Korean Heritage Go</span>
       </p>
       <h1
         class="mx-auto mt-4 max-w-2xl font-serif text-3xl leading-tight text-text sm:text-5xl sm:leading-[1.2]"
