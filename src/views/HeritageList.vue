@@ -24,9 +24,10 @@ const total = ref(0)
 
 const loading = ref(false)
 const error = ref(false)
+const errorKind = ref('') // 'upstream'(502, 공공 API) | 'down'(서버/네트워크)
 
 // 탐험을 유도하는 추천 검색어
-const suggestions = ['경복궁', '불국사', '수원화성', '한옥마을', '석굴암']
+const suggestions = ['경복궁', '창덕궁', '종묘', '불국사', '수원화성', '석굴암']
 
 async function fetchList() {
   loading.value = true
@@ -43,6 +44,8 @@ async function fetchList() {
     page.value = data.page ?? page.value
   } catch (e) {
     error.value = true
+    // 502 = 공공 API 호출 실패(일시적인 경우 많음), 그 외/무응답 = 서버 다운
+    errorKind.value = e?.response?.status === 502 ? 'upstream' : 'down'
     items.value = []
   } finally {
     loading.value = false
@@ -189,10 +192,18 @@ const skeletons = reactive(Array.from({ length: 8 }))
             />
           </svg>
         </div>
-        <h3 class="font-serif text-xl text-text">잠시 길을 잃었어요</h3>
+        <h3 class="font-serif text-xl text-text">
+          {{ errorKind === 'upstream' ? '잠시 후 다시 시도해 주세요' : '잠시 길을 잃었어요' }}
+        </h3>
         <p class="mt-2 max-w-sm text-sm leading-relaxed text-subtext">
-          유산 정보를 불러오지 못했어요. 백엔드 서버(127.0.0.1:8000)가 켜져 있는지
-          확인해 주세요. 첫 검색은 조금 느릴 수 있습니다.
+          <template v-if="errorKind === 'upstream'">
+            국가유산 공공 API가 잠시 응답하지 않았어요. 일시적인 경우가 많으니
+            다시 시도해 보세요.
+          </template>
+          <template v-else>
+            유산 정보를 불러오지 못했어요. 백엔드 서버(127.0.0.1:8000)가 켜져 있는지
+            확인해 주세요. 첫 검색은 조금 느릴 수 있습니다.
+          </template>
         </p>
         <button
           class="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-white transition-all hover:brightness-110 active:scale-95"
