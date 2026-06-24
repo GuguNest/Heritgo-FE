@@ -20,6 +20,11 @@ const routes = [
     name: 'profile-list',
     component: () => import('@/views/ProfileList.vue'),
   },
+  {
+    path: '/chatbot',
+    name: 'chatbot',
+    component: () => import('@/views/ChatbotView.vue'),
+  },
   // 가이드(생성물)
   {
     path: '/guides',

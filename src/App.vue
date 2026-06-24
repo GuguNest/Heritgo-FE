@@ -55,8 +55,16 @@ function go(path) {
         <span class="font-serif text-xl font-bold">Heritgo</span>
       </button>
 
-      <!-- 유저 메뉴 -->
-      <div class="relative">
+      <div class="flex items-center gap-2">
+        <button
+          class="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-teal transition hover:border-teal hover:bg-teal/5"
+          @click="router.push('/chatbot')"
+        >
+          챗봇 테스트
+        </button>
+
+        <!-- 유저 메뉴 -->
+        <div class="relative">
         <button
           class="flex items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-3 transition hover:border-teal"
           :aria-label="currentUser ? '내 메뉴' : '로그인 메뉴'"
@@ -221,6 +229,7 @@ function go(path) {
             </template>
           </div>
         </template>
+        </div>
       </div>
     </div>
   </header>
@@ -228,7 +237,7 @@ function go(path) {
   <!-- 라우트 화면. 목록은 KeepAlive로 검색어·페이지 상태 유지 -->
   <RouterView v-slot="{ Component }">
     <KeepAlive include="HeritageList">
-      <component :is="Component" />
+      <component :is="Component" @home="router.push('/')" />
     </KeepAlive>
   </RouterView>
 </template>
