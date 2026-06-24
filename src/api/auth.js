@@ -5,6 +5,8 @@ const authApi = axios.create({
   baseURL: 'http://127.0.0.1:8000/api/users',
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
+  // 로그인 시 httpOnly refresh 쿠키 수신, refresh 시 쿠키 전송에 필요
+  withCredentials: true,
 })
 
 authApi.interceptors.request.use((config) => {
@@ -52,6 +54,64 @@ export function getStoredUser() {
 
 // 앱 전역에서 공유하는 로그인 사용자 상태 (헤더 등에서 구독)
 export const currentUser = ref(getStoredUser())
+
+// ── access 토큰 자동 재발급 (refresh) ─────────────────────────
+// POST /api/users/token/refresh/ — body 없음, httpOnly 쿠키(heritgo_refresh) 사용
+// 동시 다발 요청이 동시에 만료돼도 refresh는 한 번만 (single-flight)
+let refreshPromise = null
+export function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = authApi
+      .post('/token/refresh/')
+      .then(({ data }) => {
+        saveSession(data) // 새 access + user 저장, currentUser 갱신
+        return data.access
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+  return refreshPromise
+}
+
+// refresh도 실패 → 세션 정리 후 로그인으로
+export function handleAuthExpired() {
+  clearSession()
+  if (
+    typeof window !== 'undefined' &&
+    !window.location.pathname.startsWith('/login')
+  ) {
+    window.location.href = '/login'
+  }
+}
+
+/**
+ * 인증이 필요한 axios 인스턴스에 401/403 → refresh → 원요청 재시도 인터셉터를 부착.
+ * (이 백엔드는 토큰 만료 시 401이 아니라 403으로 응답하므로 둘 다 처리)
+ */
+export function attachAuthRefresh(instance) {
+  instance.interceptors.response.use(
+    (res) => res,
+    async (error) => {
+      const { response, config } = error
+      if (!response || !config) throw error
+      const status = response.status
+      if ((status === 401 || status === 403) && !config._retried) {
+        config._retried = true
+        try {
+          const token = await refreshAccessToken()
+          config.headers = config.headers || {}
+          config.headers.Authorization = `Bearer ${token}`
+          return instance(config)
+        } catch {
+          handleAuthExpired()
+          throw error
+        }
+      }
+      throw error
+    },
+  )
+}
 
 export function getErrorMessage(error, fallback) {
   const data = error?.response?.data
