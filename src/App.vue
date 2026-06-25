@@ -2,7 +2,6 @@
 import { ref, computed, provide, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { currentUser } from '@/api/auth'
-import chatbotGuideIcon from '@/assets/chatbot-guide-icon.png'
 
 const route = useRoute()
 const router = useRouter()
@@ -86,7 +85,6 @@ watch(
       </button>
 
       <div class="flex items-center gap-2">
-
         <!-- 유저 메뉴 -->
         <div class="relative">
         <button
@@ -265,40 +263,28 @@ watch(
     </KeepAlive>
   </RouterView>
 
+  <!-- 챗봇 플로팅 버튼 (우측 하단 고정) -->
   <button
-    class="fixed bottom-5 right-5 z-50 inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border bg-surface p-1.5 shadow-lg shadow-primary/15 transition hover:-translate-y-0.5 hover:border-primary focus:outline-none focus:ring-4 focus:ring-teal/20 active:translate-y-0 sm:bottom-8 sm:right-8"
-    :class="
-      isChatbotRoute
-        ? 'border-primary bg-primary text-white hover:brightness-105'
-        : 'border-line text-primary hover:bg-primary/5'
-    "
-    :aria-label="isChatbotRoute ? 'AI 여행 상담 닫기' : 'AI 여행 상담 열기'"
-    :aria-pressed="isChatbotRoute"
+    v-if="!isAuthRoute && !isChatbotRoute"
+    class="group fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition hover:w-auto hover:px-5 hover:brightness-110 active:scale-95"
+    aria-label="챗봇 열기"
     @click="toggleChatbot"
   >
-    <img
-      v-if="!isChatbotRoute"
-      :src="chatbotGuideIcon"
-      alt=""
-      class="h-full w-full rounded-full object-cover"
-    />
-    <span
-      v-else
-      class="flex h-full w-full items-center justify-center rounded-full bg-white/20"
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.7"
+      stroke-linecap="round"
+      stroke-linejoin="round"
     >
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M18 6 6 18" />
-        <path d="m6 6 12 12" />
-      </svg>
-    </span>
+      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+    </svg>
+    <span
+      class="ml-0 max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-200 group-hover:ml-2 group-hover:max-w-[8rem] group-hover:opacity-100"
+      >챗봇 문의</span
+    >
   </button>
 </template>

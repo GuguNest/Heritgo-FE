@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { attachAuthRefresh, saveAccessToken } from '@/api/auth'
+import { API_BASE } from '@/api/config'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
   timeout: 40000,
