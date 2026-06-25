@@ -1,10 +1,12 @@
 import axios from 'axios'
 import { getAccessToken } from '@/api/profile'
 import { attachAuthRefresh, refreshAccessToken } from '@/api/auth'
+import { API_ORIGIN } from '@/api/config'
 
 // 가이드 API 베이스
-export const API_ORIGIN = 'http://127.0.0.1:8000'
 const BASE = `${API_ORIGIN}/api/guides`
+
+export { API_ORIGIN }
 
 // 비스트리밍 호출용 axios (TTS·조회)
 const api = axios.create({

@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { attachAuthRefresh } from '@/api/auth'
+import { API_BASE } from '@/api/config'
 
 // ── 인증 토큰 읽기 ──────────────────────────────────────────────
 // 앱이 access 토큰을 보관하는 기존 위치에서 읽어 씁니다.
@@ -46,7 +47,7 @@ export function setAccessToken(token) {
 
 // ── axios 인스턴스 + 인터셉터 ─────────────────────────────────
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api', // 끝 슬래시 필수 (요청은 /users/profiles/ 처럼 작성)
+  baseURL: API_BASE, // 요청은 /users/profiles/ 처럼 작성
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
 })

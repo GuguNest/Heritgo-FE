@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { ref } from 'vue'
+import { API_BASE } from '@/api/config'
 
 const authApi = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/users',
+  baseURL: `${API_BASE}/users`,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
   // 로그인 시 httpOnly refresh 쿠키 수신, refresh 시 쿠키 전송에 필요
