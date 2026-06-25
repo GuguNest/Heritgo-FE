@@ -193,7 +193,11 @@ watch(
         </button>
 
         <div class="mt-6">
-          <GuideAudioPlayer :guide-id="guide.id" :audio-url="guide.audio_url" />
+          <GuideAudioPlayer
+            :guide-id="guide.id"
+            :audio-url="guide.audio_url"
+            :title="heritage?.name || `오디오 가이드 #${guide.id}`"
+          />
         </div>
 
         <article
