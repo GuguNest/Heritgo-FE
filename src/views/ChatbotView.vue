@@ -110,12 +110,30 @@ async function submitQuestion() {
   error.value = ''
   sending.value = true
   question.value = ''
+
+  const stamp = Date.now()
+  const tempUserId = `temp-user-${stamp}`
+  const tempAssistantId = `temp-assistant-${stamp}`
+  messages.value.push(
+    { id: tempUserId, sender_type: 'user', content, status: 'completed' },
+    { id: tempAssistantId, sender_type: 'assistant', content: '', status: 'pending' },
+  )
+  await scrollToBottom()
+
   try {
     const result = await sendMessage(selectedSession.value.session_id, content)
-    messages.value.push(result.user_message, result.assistant_message)
+    const index = messages.value.findIndex((message) => message.id === tempUserId)
+    if (index !== -1) {
+      messages.value.splice(index, 2, result.user_message, result.assistant_message)
+    } else {
+      messages.value.push(result.user_message, result.assistant_message)
+    }
     relatedHeritages.value = result.related_heritages ?? []
     await scrollToBottom()
   } catch (requestError) {
+    messages.value = messages.value.filter(
+      (message) => message.id !== tempUserId && message.id !== tempAssistantId,
+    )
     question.value = content
     error.value = errorMessage(requestError)
   } finally {
@@ -331,12 +349,17 @@ onMounted(() => {
               >
                 <template v-if="message.status === 'pending'">
                   <div class="flex items-center gap-2 text-subtext">
-                    <span class="h-2 w-2 animate-pulse rounded-full bg-teal"></span>
-                    <span>답변 생성 중</span>
+                    <span class="flex items-center gap-1">
+                      <span
+                        class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal [animation-delay:-0.3s]"
+                      ></span>
+                      <span
+                        class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal [animation-delay:-0.15s]"
+                      ></span>
+                      <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal"></span>
+                    </span>
+                    <span class="text-xs">답변을 작성하고 있어요</span>
                   </div>
-                  <p class="mt-1 text-xs text-subtext/80">
-                    OpenAI 답변을 준비하고 있습니다.
-                  </p>
                 </template>
                 <template v-else-if="message.status === 'failed'">
                   <p class="font-medium text-red-700">답변 생성에 실패했습니다.</p>
