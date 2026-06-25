@@ -262,7 +262,7 @@ onMounted(() => {
         </p>
         <h1 class="mt-3 font-serif text-2xl text-text">문화유산 대화</h1>
         <p class="mt-2 text-sm leading-6 text-subtext">
-          실제 계정의 아이디(username)와 비밀번호로 로그인하세요.
+          로그인하고 문화유산 대화를 시작해 보세요.
         </p>
         <div
           v-if="error"
@@ -315,12 +315,6 @@ onMounted(() => {
               @click="emit('home')"
             >
               문화유산 목록
-            </button>
-            <button
-              class="text-xs text-subtext transition hover:text-primary"
-              @click="logout"
-            >
-              로그아웃
             </button>
           </div>
         </div>

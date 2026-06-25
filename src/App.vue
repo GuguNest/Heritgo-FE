@@ -263,14 +263,29 @@ watch(
     </KeepAlive>
   </RouterView>
 
-  <!-- 챗봇 플로팅 버튼 (우측 하단 고정) -->
+  <!-- 챗봇 플로팅 버튼 (우측 하단 고정) — 챗봇 화면에서는 닫기로 토글 -->
   <button
-    v-if="!isAuthRoute && !isChatbotRoute"
+    v-if="!isAuthRoute"
     class="group fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition hover:w-auto hover:px-5 hover:brightness-110 active:scale-95"
-    aria-label="챗봇 열기"
+    :aria-label="isChatbotRoute ? '챗봇 닫기' : '챗봇 열기'"
     @click="toggleChatbot"
   >
     <svg
+      v-if="isChatbotRoute"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+    <svg
+      v-else
       width="24"
       height="24"
       viewBox="0 0 24 24"
@@ -284,7 +299,7 @@ watch(
     </svg>
     <span
       class="ml-0 max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-200 group-hover:ml-2 group-hover:max-w-[8rem] group-hover:opacity-100"
-      >챗봇 문의</span
+      >{{ isChatbotRoute ? '닫기' : '챗봇 문의' }}</span
     >
   </button>
 </template>
