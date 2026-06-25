@@ -48,6 +48,7 @@ export function setAccessToken(token) {
 const api = axios.create({
   baseURL: 'http://127.0.0.1:8000/api', // 끝 슬래시 필수 (요청은 /users/profiles/ 처럼 작성)
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
   timeout: 20000,
 })
 
