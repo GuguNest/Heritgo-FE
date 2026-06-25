@@ -27,19 +27,27 @@ function onPointerDown(e) {
   startX = e.clientX
   startLeft = el.scrollLeft
   dragging.value = true
-  el.setPointerCapture?.(e.pointerId)
 }
 function onPointerMove(e) {
   if (!isDown) return
   const dx = e.clientX - startX
-  if (Math.abs(dx) > 4) moved = true
+  if (Math.abs(dx) > 4 && !moved) {
+    moved = true
+    // 실제 드래그가 시작될 때만 포인터 캡처.
+    // (단순 클릭은 캡처하지 않아야 카드의 click 이벤트가 살아있음)
+    scroller.value.setPointerCapture?.(e.pointerId)
+  }
   scroller.value.scrollLeft = startLeft - dx
 }
 function endDrag(e) {
   if (!isDown) return
   isDown = false
   dragging.value = false
-  scroller.value?.releasePointerCapture?.(e.pointerId)
+  try {
+    scroller.value?.releasePointerCapture?.(e.pointerId)
+  } catch {
+    /* 캡처되지 않은 포인터면 무시 */
+  }
 }
 // 드래그한 직후의 클릭은 카드 진입으로 처리하지 않음
 function onClickCapture(e) {

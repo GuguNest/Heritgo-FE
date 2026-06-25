@@ -108,12 +108,12 @@ const mapUrl = computed(() => {
   if (!d) return null
   const lat = pickCoordinateValue(d.latitude, d.lat, d.y, d.map_y)
   const lng = pickCoordinateValue(d.longitude, d.lng, d.lon, d.x, d.map_x)
-  if (lat !== null && lng !== null)
-    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+  if (lat !== null && lng !== null) {
+    const label = encodeURIComponent(d.name || '위치')
+    return `https://map.kakao.com/link/map/${label},${lat},${lng}`
+  }
   const q = [d.name, d.address || locationText.value].filter(Boolean).join(' ')
-  return q
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
-    : null
+  return q ? `https://map.kakao.com/?q=${encodeURIComponent(q)}` : null
 })
 
 function pickCoordinateValue(...values) {
