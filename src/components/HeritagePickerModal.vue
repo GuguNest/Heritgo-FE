@@ -27,7 +27,7 @@ onMounted(search) // 처음엔 전체 일부를 보여줌
 
 <template>
   <div
-    class="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6"
     @click.self="emit('close')"
   >
     <div

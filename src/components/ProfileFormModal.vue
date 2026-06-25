@@ -28,10 +28,11 @@ const needsLogin = ref(!canUseAuthFeature())
 
 // 폼 상태 (수정 모드면 기존 값으로 초기화)
 const form = reactive({
+  title: props.profile?.title ?? '',
   party_size: props.profile?.party_size ?? 2,
   age_group: props.profile?.age_group ?? 'adult',
   language_code: props.profile?.language_code ?? 'ko',
-  travel_purpose: props.profile?.travel_purpose ?? 'family',
+  travel_purpose: props.profile?.travel_purpose ?? 'tourism',
   preferred_duration_minutes: props.profile?.preferred_duration_minutes ?? 120,
 })
 
@@ -52,6 +53,7 @@ async function onSubmit() {
   error.value = ''
   try {
     const payload = {
+      title: form.title.trim(),
       party_size: Number(form.party_size),
       age_group: form.age_group,
       language_code: form.language_code,
@@ -88,7 +90,7 @@ function goLogin() {
 
 <template>
   <div
-    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6"
     @click.self="emit('close')"
   >
     <div
@@ -213,6 +215,21 @@ function goLogin() {
 
       <!-- 폼 -->
       <form v-else class="space-y-5 px-6 py-6" @submit.prevent="onSubmit">
+        <!-- 제목 (선택) -->
+        <div>
+          <label class="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-text">
+            제목
+            <span class="text-xs font-normal text-subtext">선택 사항</span>
+          </label>
+          <input
+            v-model="form.title"
+            type="text"
+            maxlength="100"
+            placeholder="예: 가족 나들이, 아이와 함께"
+            class="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-text placeholder:text-subtext focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/30"
+          />
+        </div>
+
         <!-- 인원 수 -->
         <div>
           <label class="mb-1.5 block text-sm font-medium text-text">
@@ -306,19 +323,27 @@ function goLogin() {
           </div>
         </div>
 
-        <!-- 관람 시간 -->
+        <!-- 여행 길이 -->
         <div>
           <label class="mb-1.5 block text-sm font-medium text-text">
-            관람 시간
+            여행 길이
           </label>
-          <select
-            v-model.number="form.preferred_duration_minutes"
-            class="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-text focus:border-teal focus:outline-none focus:ring-2 focus:ring-teal/30"
-          >
-            <option v-for="o in DURATIONS" :key="o.value" :value="o.value">
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="o in DURATIONS"
+              :key="o.value"
+              type="button"
+              class="rounded-xl border px-4 py-2.5 text-center text-sm transition-colors"
+              :class="
+                form.preferred_duration_minutes === o.value
+                  ? 'border-teal bg-teal/10 font-medium text-teal'
+                  : 'border-line bg-surface text-subtext hover:border-teal/60'
+              "
+              @click="form.preferred_duration_minutes = o.value"
+            >
               {{ o.label }}
-            </option>
-          </select>
+            </button>
+          </div>
         </div>
 
         <!-- 에러 -->

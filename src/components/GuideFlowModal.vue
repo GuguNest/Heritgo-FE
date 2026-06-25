@@ -8,7 +8,7 @@ import {
   DURATIONS,
   labelOf,
 } from '@/api/profile'
-import { streamGuide } from '@/api/guide'
+import { streamGuide, getGuides, getGuide } from '@/api/guide'
 import ProfileFormModal from '@/components/ProfileFormModal.vue'
 import GuideAudioPlayer from '@/components/GuideAudioPlayer.vue'
 
@@ -23,14 +23,22 @@ const step = ref('profile')
 const loadingProfiles = ref(false)
 const profiles = ref([])
 const showProfileForm = ref(false)
+const editingProfile = ref(null) // 선택 단계에서 바로 수정할 프로필
+const guideByProfile = ref({}) // { [profile_id]: 최신 guide }
+const isExisting = ref(false) // 결과가 기존 해설인지 여부
 
 const content = ref('')
 const guideId = ref(null)
+const audioUrl = ref(null)
+const currentProfileId = ref(null)
 const errorMsg = ref('')
 let controller = null
 
+// 이 유산의 조건 (모달에선 최대 5개만 노출)
 const myProfiles = computed(() =>
-  profiles.value.filter((p) => Number(p.heritage_id) === Number(props.heritageId)),
+  profiles.value
+    .filter((p) => Number(p.heritage_id) === Number(props.heritageId))
+    .slice(0, 5),
 )
 
 function summary(p) {
@@ -38,15 +46,27 @@ function summary(p) {
     `${p.party_size}명`,
     labelOf(AGE_GROUPS, p.age_group),
     labelOf(LANGUAGES, p.language_code),
-    labelOf(TRAVEL_PURPOSES, p.travel_purpose),
+    p.travel_purpose ? labelOf(TRAVEL_PURPOSES, p.travel_purpose) : null,
     labelOf(DURATIONS, p.preferred_duration_minutes),
-  ].join(' · ')
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 async function loadProfiles() {
   loadingProfiles.value = true
   try {
-    profiles.value = await getProfiles()
+    const [profs, guidesData] = await Promise.all([
+      getProfiles(),
+      getGuides({ size: 100 }).catch(() => ({ items: [] })),
+    ])
+    profiles.value = profs
+    // 목록은 -created 정렬이라 프로필별 첫 항목이 최신
+    const map = {}
+    for (const g of guidesData.items ?? []) {
+      if (g.profile != null && !map[g.profile]) map[g.profile] = g
+    }
+    guideByProfile.value = map
   } catch {
     profiles.value = []
   } finally {
@@ -55,10 +75,36 @@ async function loadProfiles() {
 }
 onMounted(loadProfiles)
 
+// 프로필 선택: 기존 해설이 있으면 보여주고, 없으면 새로 생성
+async function selectProfile(profileId) {
+  currentProfileId.value = profileId
+  const existing = guideByProfile.value[profileId]
+  if (existing) {
+    isExisting.value = true
+    guideId.value = existing.id
+    content.value = existing.content || ''
+    audioUrl.value = existing.audio_url || null
+    step.value = 'result'
+    // 본문/오디오 보강
+    try {
+      const full = await getGuide(existing.id)
+      content.value = full.content || content.value
+      audioUrl.value = full.audio_url || audioUrl.value
+    } catch {
+      /* 무시 */
+    }
+    return
+  }
+  startGenerate(profileId)
+}
+
 async function startGenerate(profileId) {
+  currentProfileId.value = profileId
+  isExisting.value = false
   step.value = 'generating'
   content.value = ''
   guideId.value = null
+  audioUrl.value = null
   errorMsg.value = ''
   controller = new AbortController()
   try {
@@ -89,6 +135,14 @@ function onProfileCreated(profile) {
   if (profile?.id) startGenerate(profile.id)
 }
 
+function editProfile(p) {
+  editingProfile.value = p
+}
+function onProfileEdited() {
+  editingProfile.value = null
+  loadProfiles() // 수정된 조건 반영
+}
+
 function close() {
   controller?.abort()
   emit('close')
@@ -99,7 +153,7 @@ onBeforeUnmount(() => controller?.abort())
 
 <template>
   <div
-    class="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6"
     @click.self="close"
   >
     <div
@@ -150,14 +204,23 @@ onBeforeUnmount(() => controller?.abort())
 
           <template v-else>
             <ul v-if="myProfiles.length" class="space-y-2.5">
-              <li v-for="p in myProfiles" :key="p.id">
+              <li v-for="p in myProfiles" :key="p.id" class="flex items-stretch gap-2">
                 <button
-                  class="group flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-left transition hover:border-teal hover:bg-teal/5"
-                  @click="startGenerate(p.id)"
+                  class="group flex flex-1 items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-left transition hover:border-teal hover:bg-teal/5"
+                  @click="selectProfile(p.id)"
                 >
                   <span>
-                    <span class="block text-sm font-medium text-text">
-                      {{ p.party_size }}명 · {{ labelOf(TRAVEL_PURPOSES, p.travel_purpose) }}
+                    <span class="flex items-center gap-1.5 text-sm font-medium text-text">
+                      <template v-if="p.title">{{ p.title }}</template>
+                      <template v-else>
+                        {{ p.party_size }}명<template v-if="p.travel_purpose"> · {{ labelOf(TRAVEL_PURPOSES, p.travel_purpose) }}</template>
+                      </template>
+                      <span
+                        v-if="guideByProfile[p.id]"
+                        class="rounded-full bg-teal/10 px-2 py-0.5 text-[11px] font-medium text-teal"
+                      >
+                        해설 있음
+                      </span>
                     </span>
                     <span class="mt-0.5 block text-xs text-subtext">{{ summary(p) }}</span>
                   </span>
@@ -173,6 +236,25 @@ onBeforeUnmount(() => controller?.abort())
                     stroke-linejoin="round"
                   >
                     <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+                <button
+                  class="flex w-12 shrink-0 items-center justify-center rounded-2xl border border-line bg-surface text-subtext transition hover:border-teal hover:text-teal"
+                  aria-label="조건 수정"
+                  @click="editProfile(p)"
+                >
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
                   </svg>
                 </button>
               </li>
@@ -238,6 +320,18 @@ onBeforeUnmount(() => controller?.abort())
 
         <!-- STEP 3. 결과 -->
         <div v-else-if="step === 'result'">
+          <p
+            v-if="isExisting"
+            class="mb-3 flex items-center gap-1.5 text-sm text-subtext"
+          >
+            <span
+              class="rounded-full bg-teal/10 px-2 py-0.5 text-xs font-medium text-teal"
+            >
+              저장된 해설
+            </span>
+            이미 만들어 둔 해설이에요. 새로 쓰려면 ‘다시 생성’을 눌러주세요.
+          </p>
+
           <div
             class="max-h-[40vh] overflow-y-auto whitespace-pre-line rounded-2xl border border-line bg-bg/40 p-4 text-[15px] leading-[1.9] text-text"
           >
@@ -245,12 +339,37 @@ onBeforeUnmount(() => controller?.abort())
           </div>
 
           <div class="mt-4">
-            <GuideAudioPlayer v-if="guideId" :guide-id="guideId" />
+            <GuideAudioPlayer
+              v-if="guideId"
+              :guide-id="guideId"
+              :audio-url="audioUrl"
+            />
           </div>
 
-          <div class="mt-4 flex gap-3">
+          <div class="mt-4 flex flex-wrap gap-2.5">
             <button
-              class="flex-1 rounded-full border border-line bg-surface px-5 py-2.5 text-sm font-medium text-text transition hover:border-primary"
+              class="flex items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2.5 text-sm font-medium text-text transition hover:border-coral hover:text-coral"
+              @click="startGenerate(currentProfileId)"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+              다시 생성
+            </button>
+            <button
+              class="flex-1 rounded-full border border-line bg-surface px-4 py-2.5 text-sm font-medium text-text transition hover:border-primary"
               @click="emit('open-guide', guideId)"
             >
               전체 화면으로 보기
@@ -304,6 +423,14 @@ onBeforeUnmount(() => controller?.abort())
       :heritage-name="heritageName"
       @close="showProfileForm = false"
       @saved="onProfileCreated"
+    />
+
+    <!-- 선택 단계에서 바로 조건 수정 -->
+    <ProfileFormModal
+      v-if="editingProfile"
+      :profile="editingProfile"
+      @close="editingProfile = null"
+      @saved="onProfileEdited"
     />
   </div>
 </template>
