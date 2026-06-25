@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, provide } from 'vue'
+import { ref, computed, provide, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { currentUser } from '@/api/auth'
+import chatbotGuideIcon from '@/assets/chatbot-guide-icon.png'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,6 +17,8 @@ function goHome() {
 
 // 로그인/회원가입/로그아웃 화면에서는 헤더를 숨김
 const isAuthRoute = computed(() => route.meta?.auth === true)
+const isChatbotRoute = computed(() => route.name === 'chatbot')
+const lastServicePath = ref('/')
 
 const displayName = computed(
   () => currentUser.value?.nickname || currentUser.value?.username || '',
@@ -28,6 +31,25 @@ function go(path) {
   menuOpen.value = false
   router.push(path)
 }
+
+function toggleChatbot() {
+  menuOpen.value = false
+  if (isChatbotRoute.value) {
+    router.push(lastServicePath.value)
+    return
+  }
+  router.push({ name: 'chatbot', query: { from: lastServicePath.value } })
+}
+
+watch(
+  () => route.fullPath,
+  (path) => {
+    if (!isChatbotRoute.value) {
+      lastServicePath.value = path
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -64,12 +86,6 @@ function go(path) {
       </button>
 
       <div class="flex items-center gap-2">
-        <button
-          class="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-teal transition hover:border-teal hover:bg-teal/5"
-          @click="router.push('/chatbot')"
-        >
-          챗봇 테스트
-        </button>
 
         <!-- 유저 메뉴 -->
         <div class="relative">
@@ -248,4 +264,41 @@ function go(path) {
       <component :is="Component" @home="goHome" />
     </KeepAlive>
   </RouterView>
+
+  <button
+    class="fixed bottom-5 right-5 z-50 inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border bg-surface p-1.5 shadow-lg shadow-primary/15 transition hover:-translate-y-0.5 hover:border-primary focus:outline-none focus:ring-4 focus:ring-teal/20 active:translate-y-0 sm:bottom-8 sm:right-8"
+    :class="
+      isChatbotRoute
+        ? 'border-primary bg-primary text-white hover:brightness-105'
+        : 'border-line text-primary hover:bg-primary/5'
+    "
+    :aria-label="isChatbotRoute ? 'AI 여행 상담 닫기' : 'AI 여행 상담 열기'"
+    :aria-pressed="isChatbotRoute"
+    @click="toggleChatbot"
+  >
+    <img
+      v-if="!isChatbotRoute"
+      :src="chatbotGuideIcon"
+      alt=""
+      class="h-full w-full rounded-full object-cover"
+    />
+    <span
+      v-else
+      class="flex h-full w-full items-center justify-center rounded-full bg-white/20"
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </svg>
+    </span>
+  </button>
 </template>
