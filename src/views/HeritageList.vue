@@ -5,12 +5,13 @@ import { getHeritages } from '@/api/heritage'
 import { getHomeRecommendations } from '@/api/recommendation'
 import HeritageCard from '@/components/HeritageCard.vue'
 import RecommendationRow from '@/components/RecommendationRow.vue'
+import { setChatbotPageContext } from '@/utils/chatbotContext'
 
 // KeepAlive include 매칭용 컴포넌트 이름
 defineOptions({ name: 'HeritageList' })
 
-const router = useRouter()
 const route = useRoute()
+const router = useRouter()
 function openDetail(id) {
   router.push({ name: 'heritage-detail', params: { id } })
 }
@@ -146,6 +147,46 @@ function resetHome() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 if (homeReset) watch(homeReset, resetHome)
+
+watch(
+  [items, page, total, submittedKeyword],
+  () => {
+    setChatbotPageContext(route.fullPath, {
+      page_type: 'heritage_list',
+      source_title: submittedKeyword.value
+        ? `${submittedKeyword.value} heritage search`
+        : 'Heritage list',
+      search: {
+        keyword: submittedKeyword.value,
+        page: page.value,
+        total: total.value,
+        total_pages: totalPages.value,
+      },
+      visible_heritages: items.value.slice(0, 10).map((heritage) => ({
+        id: heritage.heritage_id,
+        name: heritage.name,
+        category_name: heritage.category_name,
+        location: heritage.location || heritage.address,
+        description: heritage.description,
+      })),
+      recommendations: {
+        popular: rec.popular.slice(0, 5).map((heritage) => ({
+          id: heritage.heritage_id,
+          name: heritage.name,
+        })),
+        nearby: rec.nearby.slice(0, 5).map((heritage) => ({
+          id: heritage.heritage_id,
+          name: heritage.name,
+        })),
+        for_me: rec.for_me.slice(0, 5).map((heritage) => ({
+          id: heritage.heritage_id,
+          name: heritage.name,
+        })),
+      },
+    })
+  },
+  { deep: true, immediate: true },
+)
 
 const skeletons = reactive(Array.from({ length: 8 }))
 </script>

@@ -1,10 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { getGuides } from '@/api/guide'
 import { getHeritage } from '@/api/heritage'
 import { LANGUAGES, labelOf } from '@/api/profile'
+import { setChatbotPageContext } from '@/utils/chatbotContext'
 
+const route = useRoute()
 const router = useRouter()
 const PAGE_SIZE = 20
 
@@ -34,6 +36,32 @@ async function fetchGuides() {
   }
 }
 onMounted(fetchGuides)
+
+watch(
+  [guides, page, total, heritageNames],
+  () => {
+    setChatbotPageContext(route.fullPath, {
+      page_type: 'guide_list',
+      source_title: 'My audio guides',
+      guides: {
+        page: page.value,
+        total: total.value,
+        total_pages: totalPages.value,
+        visible_guides: guides.value.slice(0, 10).map((guide) => ({
+          id: guide.id,
+          heritage_id: guide.heritage,
+          heritage_name: heritageNameOf(guide),
+          language_code: guide.language_code,
+          language_label: labelOf(LANGUAGES, guide.language_code),
+          content_preview: preview(guide.content).slice(0, 240),
+          audio_ready: Boolean(guide.audio_url),
+          created: guide.created,
+        })),
+      },
+    })
+  },
+  { deep: true, immediate: true },
+)
 
 // 가이드가 어떤 유산인지 이름을 채워 넣음 (응답엔 id만 있음)
 async function resolveHeritageNames() {
