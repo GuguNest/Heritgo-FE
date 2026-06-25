@@ -1,10 +1,11 @@
 import axios from 'axios'
 import { getAccessToken } from '@/api/profile'
 import { attachAuthRefresh } from '@/api/auth'
+import { API_BASE } from '@/api/config'
 
 // 추천 API (베이스는 기존 모듈과 동일)
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
 })

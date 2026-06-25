@@ -307,8 +307,8 @@ const skeletons = reactive(Array.from({ length: 8 }))
             다시 시도해 보세요.
           </template>
           <template v-else>
-            유산 정보를 불러오지 못했어요. 백엔드 서버(127.0.0.1:8000)가 켜져 있는지
-            확인해 주세요. 첫 검색은 조금 느릴 수 있습니다.
+            유산 정보를 불러오지 못했어요. 네트워크 연결을 확인하고 잠시 후 다시
+            시도해 주세요.
           </template>
         </p>
         <button

@@ -1,8 +1,9 @@
 import axios from 'axios'
+import { API_BASE } from '@/api/config'
 
 // 백엔드 API 클라이언트
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
   // 첫 호출은 공공 API 캐싱 때문에 느릴 수 있어 넉넉히 설정
   timeout: 30000,
