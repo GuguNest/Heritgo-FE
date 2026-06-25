@@ -17,6 +17,9 @@ function goHome() {
 // 로그인/회원가입/로그아웃 화면에서는 헤더를 숨김
 const isAuthRoute = computed(() => route.meta?.auth === true)
 
+// 챗봇 화면 자체에서는 플로팅 버튼을 숨김
+const isChatRoute = computed(() => route.path === '/chatbot')
+
 const displayName = computed(
   () => currentUser.value?.nickname || currentUser.value?.username || '',
 )
@@ -64,13 +67,6 @@ function go(path) {
       </button>
 
       <div class="flex items-center gap-2">
-        <button
-          class="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-teal transition hover:border-teal hover:bg-teal/5"
-          @click="router.push('/chatbot')"
-        >
-          챗봇 테스트
-        </button>
-
         <!-- 유저 메뉴 -->
         <div class="relative">
         <button
@@ -248,4 +244,29 @@ function go(path) {
       <component :is="Component" @home="goHome" />
     </KeepAlive>
   </RouterView>
+
+  <!-- 챗봇 플로팅 버튼 (우측 하단 고정) -->
+  <button
+    v-if="!isAuthRoute && !isChatRoute"
+    class="group fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition hover:w-auto hover:px-5 hover:brightness-110 active:scale-95"
+    aria-label="챗봇 열기"
+    @click="router.push('/chatbot')"
+  >
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.7"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+    </svg>
+    <span
+      class="ml-0 max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium opacity-0 transition-all duration-200 group-hover:ml-2 group-hover:max-w-[8rem] group-hover:opacity-100"
+      >챗봇 문의</span
+    >
+  </button>
 </template>
