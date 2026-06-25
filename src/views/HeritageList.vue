@@ -61,7 +61,7 @@ const error = ref(false)
 const errorKind = ref('') // 'upstream'(502, 공공 API) | 'down'(서버/네트워크)
 
 // 탐험을 유도하는 추천 검색어
-const suggestions = ['경복궁', '창덕궁', '종묘', '불국사', '수원화성', '석굴암']
+const suggestions = ['경복궁', '창덕궁', '종묘', '불국사', '수원 화성', '석굴암']
 
 async function fetchList() {
   loading.value = true
