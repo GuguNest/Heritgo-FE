@@ -193,7 +193,12 @@ async function submitQuestion() {
     if (!session) {
       const payload = { title: createTitleFromMessage(content) }
       if (location) payload.current_location = location
-      if (sourceContext) payload.source_context = sourceContext
+      if (sourceContext) {
+        payload.page_context = sourceContext
+        if (sourceContext.heritage_id) {
+          payload.heritage_id = sourceContext.heritage_id
+        }
+      }
 
       session = await createSession(payload)
       sessions.value.unshift(session)
