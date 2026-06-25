@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { getAccessToken } from '@/api/profile'
-import { attachAuthRefresh, refreshAccessToken } from '@/api/auth'
+import { attachAuthRefresh, refreshAccessToken, saveAccessToken } from '@/api/auth'
 import { API_ORIGIN } from '@/api/config'
 
 // 가이드 API 베이스
@@ -12,6 +12,7 @@ export { API_ORIGIN }
 const api = axios.create({
   baseURL: BASE,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
   timeout: 60000,
 })
 api.interceptors.request.use((config) => {
@@ -54,8 +55,12 @@ export async function streamGuide(
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ profile_id: profileId }),
+    credentials: 'include',
     signal,
   })
+
+  const nextAccessToken = res.headers.get('X-Access-Token')
+  if (nextAccessToken) saveAccessToken(nextAccessToken)
 
   // 만료(401/403) → refresh 후 한 번 재시도 (스트림은 axios 인터셉터를 안 타므로 직접 처리)
   if ((res.status === 401 || res.status === 403) && !_retried) {

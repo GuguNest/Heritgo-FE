@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, provide } from 'vue'
+import { ref, computed, provide, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { currentUser } from '@/api/auth'
 
@@ -16,9 +16,8 @@ function goHome() {
 
 // 로그인/회원가입/로그아웃 화면에서는 헤더를 숨김
 const isAuthRoute = computed(() => route.meta?.auth === true)
-
-// 챗봇 화면 자체에서는 플로팅 버튼을 숨김
-const isChatRoute = computed(() => route.path === '/chatbot')
+const isChatbotRoute = computed(() => route.name === 'chatbot')
+const lastServicePath = ref('/')
 
 const displayName = computed(
   () => currentUser.value?.nickname || currentUser.value?.username || '',
@@ -31,6 +30,25 @@ function go(path) {
   menuOpen.value = false
   router.push(path)
 }
+
+function toggleChatbot() {
+  menuOpen.value = false
+  if (isChatbotRoute.value) {
+    router.push(lastServicePath.value)
+    return
+  }
+  router.push({ name: 'chatbot', query: { from: lastServicePath.value } })
+}
+
+watch(
+  () => route.fullPath,
+  (path) => {
+    if (!isChatbotRoute.value) {
+      lastServicePath.value = path
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -247,10 +265,10 @@ function go(path) {
 
   <!-- 챗봇 플로팅 버튼 (우측 하단 고정) -->
   <button
-    v-if="!isAuthRoute && !isChatRoute"
+    v-if="!isAuthRoute && !isChatbotRoute"
     class="group fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition hover:w-auto hover:px-5 hover:brightness-110 active:scale-95"
     aria-label="챗봇 열기"
-    @click="router.push('/chatbot')"
+    @click="toggleChatbot"
   >
     <svg
       width="24"

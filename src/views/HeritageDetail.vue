@@ -1,14 +1,16 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getHeritage } from '@/api/heritage'
 import GuideFlowModal from '@/components/GuideFlowModal.vue'
 import KakaoMap from '@/components/KakaoMap.vue'
+import { setChatbotPageContext } from '@/utils/chatbotContext'
 
 const props = defineProps({
   heritageId: { type: [Number, String], required: true },
 })
 
+const route = useRoute()
 const router = useRouter()
 function goBack() {
   // 직전 페이지가 있으면 뒤로, 없으면 홈
@@ -137,6 +139,34 @@ const mapCoordinates = computed(() => {
 
   return { lat, lng }
 })
+
+watch(
+  data,
+  (heritage) => {
+    if (!heritage) return
+
+    setChatbotPageContext(route.fullPath, {
+      page_type: 'heritage_detail',
+      source_title: heritage.name,
+      heritage_id: heritage.heritage_id ?? props.heritageId,
+      heritage: {
+        id: heritage.heritage_id ?? props.heritageId,
+        name: heritage.name,
+        category_name: heritage.category_name,
+        category_path: heritage.category_path,
+        kind_name: heritage.kind_name,
+        location: locationText.value,
+        address: heritage.address,
+        origin_period: heritage.origin_period,
+        admin_name: heritage.admin_name,
+        description: heritage.description,
+        image_url: heritage.image_url,
+        coordinates: mapCoordinates.value,
+      },
+    })
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
