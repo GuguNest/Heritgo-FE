@@ -1,14 +1,17 @@
 <script setup>
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { generateTts } from '@/api/guide'
+import { useAudioPlayer } from '@/composables/useAudioPlayer'
 
 const props = defineProps({
   guideId: { type: [Number, String], required: true },
   audioUrl: { type: String, default: null },
+  title: { type: String, default: '' },
 })
 const emit = defineEmits(['update:audioUrl'])
 
-const audioEl = ref(null)
+const player = useAudioPlayer()
+
 const src = ref(props.audioUrl)
 watch(
   () => props.audioUrl,
@@ -20,12 +23,19 @@ watch(
 const generating = ref(false)
 const error = ref('')
 
-const playing = ref(false)
-const duration = ref(0)
-const currentTime = ref(0)
-const rate = ref(1)
 const RATES = [0.75, 1, 1.25, 1.5]
 
+// 전역 플레이어가 "이 가이드"를 재생 중인지
+const isCurrent = computed(
+  () =>
+    !!src.value &&
+    player.state.guideId === props.guideId &&
+    player.state.src === src.value,
+)
+const playing = computed(() => isCurrent.value && player.state.playing)
+const currentTime = computed(() => (isCurrent.value ? player.state.currentTime : 0))
+const duration = computed(() => (isCurrent.value ? player.state.duration : 0))
+const rate = computed(() => player.state.rate)
 const progress = computed(() =>
   duration.value ? (currentTime.value / duration.value) * 100 : 0,
 )
@@ -37,6 +47,24 @@ function fmt(sec) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+function startThisGuide() {
+  player.play({ guideId: props.guideId, src: src.value, title: props.title })
+}
+
+function toggle() {
+  if (isCurrent.value) player.toggle()
+  else startThisGuide()
+}
+
+function seek(e) {
+  if (!isCurrent.value) startThisGuide()
+  player.seekToPercent(Number(e.target.value))
+}
+
+function setRate(r) {
+  player.setRate(r)
+}
+
 async function createAudio() {
   generating.value = true
   error.value = ''
@@ -44,8 +72,8 @@ async function createAudio() {
     const guide = await generateTts(props.guideId)
     src.value = guide.audio_url
     emit('update:audioUrl', guide.audio_url)
-    // 메타데이터 로드 후 자동 재생
-    await nextTickPlay()
+    // 생성 후 자동 재생 (전역 플레이어)
+    startThisGuide()
   } catch (e) {
     const status = e?.response?.status
     error.value =
@@ -56,42 +84,6 @@ async function createAudio() {
     generating.value = false
   }
 }
-
-async function nextTickPlay() {
-  await nextTick()
-  try {
-    await audioEl.value?.play()
-  } catch {
-    // 자동재생 차단 시 사용자가 직접 재생
-  }
-}
-
-function toggle() {
-  const el = audioEl.value
-  if (!el) return
-  if (el.paused) el.play()
-  else el.pause()
-}
-
-function onLoaded() {
-  duration.value = audioEl.value?.duration || 0
-}
-function onTime() {
-  currentTime.value = audioEl.value?.currentTime || 0
-}
-function seek(e) {
-  const el = audioEl.value
-  if (!el || !duration.value) return
-  el.currentTime = (Number(e.target.value) / 100) * duration.value
-}
-function setRate(r) {
-  rate.value = r
-  if (audioEl.value) audioEl.value.playbackRate = r
-}
-
-onBeforeUnmount(() => {
-  audioEl.value?.pause()
-})
 </script>
 
 <template>
@@ -135,21 +127,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 플레이어 -->
-    <div
-      v-else
-      class="rounded-2xl border border-line bg-surface p-4"
-    >
-      <audio
-        ref="audioEl"
-        :src="src"
-        preload="metadata"
-        @loadedmetadata="onLoaded"
-        @timeupdate="onTime"
-        @play="playing = true"
-        @pause="playing = false"
-        @ended="playing = false"
-      ></audio>
-
+    <div v-else class="rounded-2xl border border-line bg-surface p-4">
       <div class="flex items-center gap-3">
         <button
           class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-coral text-white transition hover:brightness-105 active:scale-95"
