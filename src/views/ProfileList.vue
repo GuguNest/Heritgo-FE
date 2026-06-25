@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import {
   getProfiles,
   getProfile,
+  deleteProfile,
   AGE_GROUPS,
   LANGUAGES,
   TRAVEL_PURPOSES,
@@ -29,6 +30,21 @@ const heritageNames = ref({}) // { [heritage_id]: name }
 
 const editing = ref(null) // 수정 중인 프로필
 const editLoadingId = ref(null)
+const confirmingId = ref(null) // 삭제 확인 중인 프로필
+const deletingId = ref(null) // 삭제 진행 중
+
+async function doDelete(p) {
+  deletingId.value = p.id
+  try {
+    await deleteProfile(p.id)
+    profiles.value = profiles.value.filter((x) => x.id !== p.id)
+  } catch {
+    /* 실패 시 그대로 둠 */
+  } finally {
+    deletingId.value = null
+    confirmingId.value = null
+  }
+}
 
 // 새 프로필 만들기: 유산 선택 → 조건 입력
 const showPicker = ref(false)
@@ -223,12 +239,28 @@ function onSaved() {
           class="flex flex-col rounded-3xl border border-line bg-surface p-5 shadow-sm transition-shadow hover:shadow-md"
         >
           <div class="flex items-start justify-between gap-3">
-            <button
-              class="text-left font-serif text-lg text-text transition-colors hover:text-teal"
-              @click="openHeritage(p.heritage_id)"
-            >
-              {{ heritageNameOf(p) }}
-            </button>
+            <div class="min-w-0">
+              <button
+                v-if="p.title"
+                class="block max-w-full truncate text-left text-xs font-medium text-teal transition-colors hover:underline"
+                @click="openHeritage(p.heritage_id)"
+              >
+                {{ heritageNameOf(p) }}
+              </button>
+              <h3
+                v-if="p.title"
+                class="font-serif text-lg text-text"
+              >
+                {{ p.title }}
+              </h3>
+              <button
+                v-else
+                class="text-left font-serif text-lg text-text transition-colors hover:text-teal"
+                @click="openHeritage(p.heritage_id)"
+              >
+                {{ heritageNameOf(p) }}
+              </button>
+            </div>
             <span
               class="shrink-0 rounded-full bg-teal/10 px-3 py-1 text-xs font-medium text-teal"
             >
@@ -247,7 +279,7 @@ function onSaved() {
             </dd>
             <dt class="text-subtext">목적</dt>
             <dd class="text-right text-text">
-              {{ labelOf(TRAVEL_PURPOSES, p.travel_purpose) }}
+              {{ p.travel_purpose ? labelOf(TRAVEL_PURPOSES, p.travel_purpose) : '선택 안 함' }}
             </dd>
             <dt class="text-subtext">관람 시간</dt>
             <dd class="text-right text-text">
@@ -255,13 +287,58 @@ function onSaved() {
             </dd>
           </dl>
 
-          <button
-            class="mt-5 self-end rounded-full border border-line px-4 py-2 text-sm font-medium text-text transition-colors hover:border-teal hover:text-teal disabled:opacity-50"
-            :disabled="editLoadingId === p.id"
-            @click="openEdit(p)"
+          <!-- 삭제 확인 -->
+          <div
+            v-if="confirmingId === p.id"
+            class="mt-5 flex items-center justify-end gap-2"
           >
-            {{ editLoadingId === p.id ? '여는 중…' : '조건 수정' }}
-          </button>
+            <span class="mr-auto text-sm text-subtext">삭제할까요?</span>
+            <button
+              class="rounded-full border border-line px-4 py-2 text-sm font-medium text-subtext transition hover:border-text hover:text-text"
+              :disabled="deletingId === p.id"
+              @click="confirmingId = null"
+            >
+              취소
+            </button>
+            <button
+              class="rounded-full bg-coral px-4 py-2 text-sm font-medium text-white transition hover:brightness-105 active:scale-95 disabled:opacity-60"
+              :disabled="deletingId === p.id"
+              @click="doDelete(p)"
+            >
+              {{ deletingId === p.id ? '삭제 중…' : '삭제' }}
+            </button>
+          </div>
+
+          <!-- 기본 액션 -->
+          <div v-else class="mt-5 flex items-center justify-end gap-2">
+            <button
+              class="rounded-full border border-line p-2 text-subtext transition-colors hover:border-coral hover:text-coral"
+              aria-label="삭제"
+              @click="confirmingId = p.id"
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 6h18" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              </svg>
+            </button>
+            <button
+              class="rounded-full border border-line px-4 py-2 text-sm font-medium text-text transition-colors hover:border-teal hover:text-teal disabled:opacity-50"
+              :disabled="editLoadingId === p.id"
+              @click="openEdit(p)"
+            >
+              {{ editLoadingId === p.id ? '여는 중…' : '조건 수정' }}
+            </button>
+          </div>
         </article>
       </div>
     </main>
