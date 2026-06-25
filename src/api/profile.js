@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { attachAuthRefresh } from '@/api/auth'
+import { API_BASE } from '@/api/config'
 
 // ── 인증 토큰 읽기 ──────────────────────────────────────────────
 // 앱이 access 토큰을 보관하는 기존 위치에서 읽어 씁니다.
@@ -46,7 +47,7 @@ export function setAccessToken(token) {
 
 // ── axios 인스턴스 + 인터셉터 ─────────────────────────────────
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api', // 끝 슬래시 필수 (요청은 /users/profiles/ 처럼 작성)
+  baseURL: API_BASE, // 요청은 /users/profiles/ 처럼 작성
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
   timeout: 20000,
@@ -81,17 +82,16 @@ export const LANGUAGES = [
   { value: 'zh', label: '中文' },
 ]
 export const TRAVEL_PURPOSES = [
-  { value: 'family', label: '가족' },
-  { value: 'friends', label: '친구' },
-  { value: 'solo', label: '혼자' },
+  { value: 'tourism', label: '관광' },
   { value: 'education', label: '교육' },
+  { value: 'experience', label: '체험' },
+  { value: 'healing', label: '휴식' },
 ]
+// 여행 길이 — short/medium/long. 값은 백엔드 호환을 위해 분(minutes)으로 저장.
 export const DURATIONS = [
-  { value: 30, label: '30분' },
-  { value: 60, label: '1시간' },
-  { value: 90, label: '1시간 30분' },
-  { value: 120, label: '2시간' },
-  { value: 180, label: '3시간' },
+  { value: 60, label: '짧게', hint: 'Short' },
+  { value: 120, label: '보통', hint: 'Medium' },
+  { value: 180, label: '길게', hint: 'Long' },
 ]
 
 // 코드 → 라벨 헬퍼
@@ -162,6 +162,16 @@ export async function updateProfile(id, payload) {
     return data
   } catch (err) {
     if (isNetworkError(err)) return { id: Number(id), ...payload, _mock: true }
+    throw err
+  }
+}
+
+/** 삭제 (소프트 삭제)  DELETE /users/profiles/{id}/ → 204 */
+export async function deleteProfile(id) {
+  try {
+    await api.delete(`/users/profiles/${id}/`)
+  } catch (err) {
+    if (isNetworkError(err)) return // 백엔드 off 시 조용히 통과
     throw err
   }
 }

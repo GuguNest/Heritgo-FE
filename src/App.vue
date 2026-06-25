@@ -1,10 +1,18 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { currentUser } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
+
+// 로고(홈) 클릭 시 홈 화면을 초기 상태로 리셋하기 위한 신호
+const homeReset = ref(0)
+provide('homeReset', homeReset)
+function goHome() {
+  homeReset.value++ // KeepAlive로 유지된 홈에 리셋 신호 전달
+  if (route.path !== '/') router.push('/')
+}
 
 // 로그인/회원가입/로그아웃 화면에서는 헤더를 숨김
 const isAuthRoute = computed(() => route.meta?.auth === true)
@@ -32,7 +40,7 @@ function go(path) {
       <!-- 로고 -->
       <button
         class="inline-flex items-center gap-2 rounded-xl py-1 pr-2 text-primary transition hover:opacity-70"
-        @click="router.push('/')"
+        @click="goHome"
       >
         <span
           class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white"
@@ -237,7 +245,7 @@ function go(path) {
   <!-- 라우트 화면. 목록은 KeepAlive로 검색어·페이지 상태 유지 -->
   <RouterView v-slot="{ Component }">
     <KeepAlive include="HeritageList">
-      <component :is="Component" @home="router.push('/')" />
+      <component :is="Component" @home="goHome" />
     </KeepAlive>
   </RouterView>
 </template>

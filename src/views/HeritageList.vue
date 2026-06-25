@@ -1,6 +1,6 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, inject, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { getHeritages } from '@/api/heritage'
 import { getHomeRecommendations } from '@/api/recommendation'
 import HeritageCard from '@/components/HeritageCard.vue'
@@ -10,6 +10,7 @@ import RecommendationRow from '@/components/RecommendationRow.vue'
 defineOptions({ name: 'HeritageList' })
 
 const router = useRouter()
+const route = useRoute()
 function openDetail(id) {
   router.push({ name: 'heritage-detail', params: { id } })
 }
@@ -85,10 +86,18 @@ async function fetchList() {
   }
 }
 
+// URL 쿼리(?keyword=&page=) → 검색 상태 복원
+function readQuery() {
+  keyword.value = route.query.keyword ? String(route.query.keyword) : ''
+  submittedKeyword.value = keyword.value
+  const p = parseInt(route.query.page, 10)
+  page.value = Number.isInteger(p) && p > 0 ? p : 1
+}
+
 function onSearch() {
-  submittedKeyword.value = keyword.value.trim()
-  page.value = 1
-  fetchList()
+  const kw = keyword.value.trim()
+  // 쿼리만 갱신 → watch가 목록을 다시 불러옴 (page는 1로 리셋)
+  router.push({ query: kw ? { keyword: kw } : {} })
 }
 
 function pickSuggestion(s) {
@@ -98,15 +107,45 @@ function pickSuggestion(s) {
 
 function goPage(p) {
   if (p < 1 || p > totalPages.value || p === page.value || loading.value) return
-  page.value = p
-  fetchList()
+  const q = {}
+  if (submittedKeyword.value) q.keyword = submittedKeyword.value
+  if (p > 1) q.page = String(p)
+  router.push({ query: q })
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+// 쿼리 변화(검색·페이지·뒤로가기·새로고침 복원) → 목록 갱신
+watch(
+  () => route.query,
+  () => {
+    if (route.path !== '/') return
+    readQuery()
+    fetchList()
+  },
+)
+
 onMounted(() => {
+  readQuery()
   fetchList()
   fetchRecommendations()
 })
+
+// 네비게이션 로고(홈) 클릭 시 홈을 초기 상태로 리셋
+const homeReset = inject('homeReset', null)
+function resetHome() {
+  keyword.value = ''
+  // URL에 검색 쿼리가 남아있으면 제거 → watch가 기본 목록을 로드
+  if (route.query.keyword || route.query.page) {
+    router.push({ query: {} })
+  } else {
+    submittedKeyword.value = ''
+    page.value = 1
+    fetchList()
+  }
+  fetchRecommendations()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+if (homeReset) watch(homeReset, resetHome)
 
 const skeletons = reactive(Array.from({ length: 8 }))
 </script>
@@ -119,7 +158,7 @@ const skeletons = reactive(Array.from({ length: 8 }))
         class="text-sm font-medium uppercase tracking-[0.35em] text-teal sm:text-base"
       >
         HERITGO
-        <span class="text-subtext/70">· Korean Heritage</span>
+        <span class="text-subtext/70">· Korean Heritage Go</span>
       </p>
       <h1
         class="mx-auto mt-4 max-w-2xl font-serif text-3xl leading-tight text-text sm:text-5xl sm:leading-[1.2]"
@@ -127,7 +166,9 @@ const skeletons = reactive(Array.from({ length: 8 }))
         오늘, 어떤 유산을<br class="sm:hidden" />
         여행해볼까요?
       </h1>
-      <p class="mx-auto mt-4 max-w-md text-sm text-subtext sm:text-base">
+      <p
+        class="mx-auto mt-4 break-keep whitespace-nowrap text-sm text-subtext sm:text-base"
+      >
         도시의 골목부터 천년의 절터까지, 한국 곳곳에 숨은 이야기를 만나보세요.
       </p>
 
@@ -266,8 +307,8 @@ const skeletons = reactive(Array.from({ length: 8 }))
             다시 시도해 보세요.
           </template>
           <template v-else>
-            유산 정보를 불러오지 못했어요. 백엔드 서버(127.0.0.1:8000)가 켜져 있는지
-            확인해 주세요. 첫 검색은 조금 느릴 수 있습니다.
+            유산 정보를 불러오지 못했어요. 네트워크 연결을 확인하고 잠시 후 다시
+            시도해 주세요.
           </template>
         </p>
         <button
