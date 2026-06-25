@@ -13,6 +13,8 @@ import {
   sendMessage,
 } from '@/api/chatbot'
 
+defineOptions({ name: 'ChatbotView' })
+
 const emit = defineEmits(['home'])
 const route = useRoute()
 
@@ -21,12 +23,12 @@ const authenticated = ref(hasAccessToken())
 const sessions = ref([])
 const selectedSession = ref(null)
 const messages = ref([])
-const relatedHeritages = ref([])
 const question = ref('')
 const loading = ref(false)
 const sending = ref(false)
 const error = ref('')
 const messagePanel = ref(null)
+const expandedHeritages = ref(new Set())
 const currentLocation = ref(null)
 let currentLocationPromise = null
 
@@ -52,6 +54,14 @@ async function scrollToBottom() {
   if (messagePanel.value) {
     messagePanel.value.scrollTop = messagePanel.value.scrollHeight
   }
+}
+
+// 관련 유산 카드는 기본 접힘, 메시지별로 펼침 토글
+function toggleHeritages(id) {
+  const next = new Set(expandedHeritages.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  expandedHeritages.value = next
 }
 
 function getCurrentLocation() {
@@ -113,7 +123,6 @@ async function submitLogin() {
 function startNewSession() {
   selectedSession.value = null
   messages.value = []
-  relatedHeritages.value = []
   error.value = ''
 }
 
@@ -155,7 +164,6 @@ function getSourceContext() {
 
 async function selectSession(session) {
   selectedSession.value = session
-  relatedHeritages.value = []
   error.value = ''
   try {
     messages.value = await getMessages(session.session_id)
@@ -211,6 +219,7 @@ async function submitQuestion() {
       location,
       sourceContext,
     )
+    result.assistant_message.related_heritages = result.related_heritages ?? []
     // 임시 말풍선 2개를 실제 응답으로 교체
     const index = messages.value.findIndex((message) => message.id === tempUserId)
     if (index !== -1) {
@@ -218,7 +227,6 @@ async function submitQuestion() {
     } else {
       messages.value.push(result.user_message, result.assistant_message)
     }
-    relatedHeritages.value = result.related_heritages ?? []
     await scrollToBottom()
   } catch (requestError) {
     // 실패 시 임시 말풍선 제거하고 입력 내용 복원
@@ -238,7 +246,6 @@ function logout() {
   sessions.value = []
   selectedSession.value = null
   messages.value = []
-  relatedHeritages.value = []
 }
 
 onMounted(() => {
@@ -383,77 +390,104 @@ onMounted(() => {
               </div>
             </div>
 
-            <div
-              v-for="message in messages"
-              :key="message.id"
-              class="flex"
-              :class="message.sender_type === 'user' ? 'justify-end' : 'justify-start'"
-            >
+            <template v-for="message in messages" :key="message.id">
               <div
-                class="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-7 shadow-sm"
-                :class="
-                  message.sender_type === 'user'
-                    ? 'rounded-br-md bg-primary text-white'
-                    : 'rounded-bl-md border border-line bg-surface text-text'
-                "
+                class="flex"
+                :class="message.sender_type === 'user' ? 'justify-end' : 'justify-start'"
               >
-                <template v-if="message.status === 'pending'">
-                  <div class="flex items-center gap-2 text-subtext">
-                    <span class="flex items-center gap-1">
-                      <span
-                        class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal [animation-delay:-0.3s]"
-                      ></span>
-                      <span
-                        class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal [animation-delay:-0.15s]"
-                      ></span>
-                      <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal"></span>
-                    </span>
-                    <span class="text-xs">답변을 작성하고 있어요</span>
-                  </div>
-                </template>
-                <template v-else-if="message.status === 'failed'">
-                  <p class="font-medium text-red-700">답변 생성에 실패했습니다.</p>
-                  <p class="mt-1 text-xs text-red-600">
-                    {{ message.error_message || '잠시 후 다시 질문해 주세요.' }}
-                  </p>
-                </template>
-                <template v-else>{{ message.content }}</template>
-              </div>
-            </div>
-
-            <section v-if="relatedHeritages.length" class="pt-2">
-              <p
-                class="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal"
-              >
-                Search Results
-              </p>
-              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <article
-                  v-for="heritage in relatedHeritages"
-                  :key="heritage.heritage_id"
-                  class="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition hover:border-teal/40"
+                <div
+                  class="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-7 shadow-sm"
+                  :class="
+                    message.sender_type === 'user'
+                      ? 'rounded-br-md bg-primary text-white'
+                      : 'rounded-bl-md border border-line bg-surface text-text'
+                  "
                 >
-                  <img
-                    v-if="heritage.image_url"
-                    :src="heritage.image_url"
-                    :alt="heritage.name"
-                    class="h-32 w-full object-cover"
-                  />
-                  <div class="p-4">
-                    <h3 class="font-serif text-lg text-text">{{ heritage.name }}</h3>
-                    <p class="mt-1 text-xs text-subtext">
-                      {{ heritage.location || '위치 정보 없음'
-                      }}<span v-if="heritage.category_name">
-                        · {{ heritage.category_name }}</span
-                      >
+                  <template v-if="message.status === 'pending'">
+                    <div class="flex items-center gap-2 text-subtext">
+                      <span class="flex items-center gap-1">
+                        <span
+                          class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal [animation-delay:-0.3s]"
+                        ></span>
+                        <span
+                          class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal [animation-delay:-0.15s]"
+                        ></span>
+                        <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-teal"></span>
+                      </span>
+                      <span class="text-xs">답변을 작성하고 있어요</span>
+                    </div>
+                  </template>
+                  <template v-else-if="message.status === 'failed'">
+                    <p class="font-medium text-red-700">답변 생성에 실패했습니다.</p>
+                    <p class="mt-1 text-xs text-red-600">
+                      {{ message.error_message || '잠시 후 다시 질문해 주세요.' }}
                     </p>
-                    <p class="mt-3 line-clamp-3 text-xs leading-5 text-subtext">
-                      {{ heritage.description || '상세 설명이 없습니다.' }}
-                    </p>
-                  </div>
-                </article>
+                  </template>
+                  <template v-else>{{ message.content }}</template>
+                </div>
               </div>
-            </section>
+
+              <!-- 관련 유산 카드: 해당 답변 바로 아래에 인라인 표시 -->
+              <section
+                v-if="
+                  message.sender_type === 'assistant' &&
+                  message.related_heritages?.length
+                "
+                class="pt-1"
+              >
+                <button
+                  type="button"
+                  class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal transition hover:text-primary"
+                  @click="toggleHeritages(message.id)"
+                >
+                  관련 문화유산 {{ message.related_heritages.length }}곳
+                  <svg
+                    class="transition-transform"
+                    :class="{ 'rotate-180': expandedHeritages.has(message.id) }"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                <div
+                  v-if="expandedHeritages.has(message.id)"
+                  class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                >
+                  <RouterLink
+                    v-for="heritage in message.related_heritages"
+                    :key="heritage.heritage_id"
+                    :to="{ name: 'heritage-detail', params: { id: heritage.heritage_id } }"
+                    class="block overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition hover:-translate-y-0.5 hover:border-teal/40"
+                  >
+                    <img
+                      v-if="heritage.image_url"
+                      :src="heritage.image_url"
+                      :alt="heritage.name"
+                      class="h-32 w-full object-cover"
+                    />
+                    <div class="p-4">
+                      <h3 class="font-serif text-lg text-text">{{ heritage.name }}</h3>
+                      <p class="mt-1 text-xs text-subtext">
+                        {{ heritage.location || '위치 정보 없음'
+                        }}<span v-if="heritage.category_name">
+                          · {{ heritage.category_name }}</span
+                        >
+                      </p>
+                      <p class="mt-3 line-clamp-3 text-xs leading-5 text-subtext">
+                        {{ heritage.description || '상세 설명이 없습니다.' }}
+                      </p>
+                    </div>
+                  </RouterLink>
+                </div>
+              </section>
+            </template>
           </div>
         </div>
 
