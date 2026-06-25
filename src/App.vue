@@ -2,6 +2,7 @@
 import { ref, computed, provide, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { currentUser } from '@/api/auth'
+import { useAudioPlayer } from '@/composables/useAudioPlayer'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,6 +50,34 @@ watch(
   },
   { immediate: true },
 )
+
+// 전역 오디오(가이드) 미니 플레이어
+const audioPlayer = useAudioPlayer()
+const miniProgress = computed(() =>
+  audioPlayer.state.duration
+    ? (audioPlayer.state.currentTime / audioPlayer.state.duration) * 100
+    : 0,
+)
+// 재생 중인 가이드의 상세 페이지에 있을 땐 미니 플레이어 숨김(중복 방지)
+const showMiniPlayer = computed(
+  () =>
+    !isAuthRoute.value &&
+    // 챗봇 화면은 하단이 입력창이라 겹침 방지를 위해 숨김
+    !isChatbotRoute.value &&
+    !!audioPlayer.state.src &&
+    !(
+      route.name === 'guide-detail' &&
+      String(route.params.id) === String(audioPlayer.state.guideId)
+    ),
+)
+function openPlayingGuide() {
+  if (audioPlayer.state.guideId != null) {
+    router.push({
+      name: 'guide-detail',
+      params: { id: audioPlayer.state.guideId },
+    })
+  }
+}
 </script>
 
 <template>
@@ -258,7 +287,7 @@ watch(
 
   <!-- 라우트 화면. 목록은 KeepAlive로 검색어·페이지 상태 유지 -->
   <RouterView v-slot="{ Component }">
-    <KeepAlive include="HeritageList">
+    <KeepAlive include="HeritageList,ChatbotView">
       <component :is="Component" @home="goHome" />
     </KeepAlive>
   </RouterView>
@@ -302,4 +331,59 @@ watch(
       >{{ isChatbotRoute ? '닫기' : '챗봇 문의' }}</span
     >
   </button>
+
+  <!-- 가이드 오디오 미니 플레이어 (재생 중이면 하단 좌측 고정) -->
+  <div
+    v-if="showMiniPlayer"
+    class="fixed bottom-6 left-6 z-40 flex w-[min(78vw,22rem)] items-center gap-3 rounded-2xl border border-line bg-surface/95 p-3 shadow-lg backdrop-blur"
+  >
+    <button
+      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-coral text-white transition hover:brightness-105 active:scale-95"
+      :aria-label="audioPlayer.state.playing ? '일시정지' : '재생'"
+      @click="audioPlayer.toggle"
+    >
+      <svg
+        v-if="!audioPlayer.state.playing"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d="M8 5v14l11-7z" />
+      </svg>
+      <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
+      </svg>
+    </button>
+    <button class="min-w-0 flex-1 text-left" @click="openPlayingGuide">
+      <p class="truncate text-sm font-medium text-text">
+        {{ audioPlayer.state.title || '오디오 가이드' }}
+      </p>
+      <div class="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-line">
+        <div
+          class="h-full rounded-full bg-coral transition-all"
+          :style="{ width: miniProgress + '%' }"
+        ></div>
+      </div>
+    </button>
+    <button
+      class="shrink-0 text-subtext transition hover:text-primary"
+      aria-label="재생 종료"
+      @click="audioPlayer.stop"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </svg>
+    </button>
+  </div>
 </template>
