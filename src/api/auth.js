@@ -16,6 +16,16 @@ authApi.interceptors.request.use((config) => {
   return config
 })
 
+export function saveAccessTokenFromResponse(response) {
+  const token = response?.headers?.['x-access-token']
+  if (token) saveAccessToken(token)
+  return token
+}
+
+export function saveAccessToken(token) {
+  localStorage.setItem('heritgo_access_token', token)
+}
+
 export async function signUp(payload) {
   const { data } = await authApi.post('/signup/', payload)
   return data
@@ -32,7 +42,7 @@ export async function logout() {
 
 export function saveSession(data) {
   const accessToken = data?.access ?? data?.access_token ?? data?.token
-  if (accessToken) localStorage.setItem('heritgo_access_token', accessToken)
+  if (accessToken) saveAccessToken(accessToken)
   if (data?.refresh) localStorage.setItem('heritgo_refresh_token', data.refresh)
   if (data?.user) localStorage.setItem('heritgo_user', JSON.stringify(data.user))
   currentUser.value = getStoredUser()
@@ -92,7 +102,10 @@ export function handleAuthExpired() {
  */
 export function attachAuthRefresh(instance) {
   instance.interceptors.response.use(
-    (res) => res,
+    (res) => {
+      saveAccessTokenFromResponse(res)
+      return res
+    },
     async (error) => {
       const { response, config } = error
       if (!response || !config) throw error

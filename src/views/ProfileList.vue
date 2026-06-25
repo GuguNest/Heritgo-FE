@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import {
   getProfiles,
   getProfile,
@@ -13,8 +13,10 @@ import {
 import { getHeritage } from '@/api/heritage'
 import ProfileFormModal from '@/components/ProfileFormModal.vue'
 import HeritagePickerModal from '@/components/HeritagePickerModal.vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { setChatbotPageContext } from '@/utils/chatbotContext'
 
+const route = useRoute()
 const router = useRouter()
 function goHome() {
   router.push({ name: 'heritage-list' })
@@ -92,6 +94,30 @@ async function resolveHeritageNames() {
 }
 
 onMounted(fetchProfiles)
+
+watch(
+  [profiles, heritageNames],
+  () => {
+    setChatbotPageContext(route.fullPath, {
+      page_type: 'profile_list',
+      source_title: 'Guide profiles',
+      profiles: profiles.value.slice(0, 10).map((profile) => ({
+        id: profile.id,
+        heritage_id: profile.heritage_id,
+        heritage_name: heritageNameOf(profile),
+        age_group: profile.age_group,
+        age_group_label: labelOf(AGE_GROUPS, profile.age_group),
+        language_code: profile.language_code,
+        language_label: labelOf(LANGUAGES, profile.language_code),
+        travel_purpose: profile.travel_purpose,
+        travel_purpose_label: labelOf(TRAVEL_PURPOSES, profile.travel_purpose),
+        duration: profile.duration,
+        duration_label: labelOf(DURATIONS, profile.duration),
+      })),
+    })
+  },
+  { deep: true, immediate: true },
+)
 
 function heritageNameOf(p) {
   return (

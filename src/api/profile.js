@@ -49,6 +49,7 @@ export function setAccessToken(token) {
 const api = axios.create({
   baseURL: API_BASE, // 요청은 /users/profiles/ 처럼 작성
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
   timeout: 20000,
 })
 

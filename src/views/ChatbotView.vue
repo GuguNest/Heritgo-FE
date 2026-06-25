@@ -1,5 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { getChatbotPageContext } from '@/utils/chatbotContext'
 import {
   clearSession,
   createSession,
@@ -12,6 +14,7 @@ import {
 } from '@/api/chatbot'
 
 const emit = defineEmits(['home'])
+const route = useRoute()
 
 const credentials = reactive({ username: '', password: '' })
 const authenticated = ref(hasAccessToken())
@@ -19,12 +22,13 @@ const sessions = ref([])
 const selectedSession = ref(null)
 const messages = ref([])
 const relatedHeritages = ref([])
-const newSessionTitle = ref('')
 const question = ref('')
 const loading = ref(false)
 const sending = ref(false)
 const error = ref('')
 const messagePanel = ref(null)
+const currentLocation = ref(null)
+let currentLocationPromise = null
 
 const quickQuestions = [
   '서울에서 조선시대 궁궐을 추천해주세요',
@@ -39,11 +43,43 @@ const hasPendingAnswer = computed(() =>
   ),
 )
 
+const activeSessionTitle = computed(
+  () => selectedSession.value?.title ?? '새 대화를 시작해 보세요',
+)
+
 async function scrollToBottom() {
   await nextTick()
   if (messagePanel.value) {
     messagePanel.value.scrollTop = messagePanel.value.scrollHeight
   }
+}
+
+function getCurrentLocation() {
+  if (currentLocation.value) return Promise.resolve(currentLocation.value)
+  if (currentLocationPromise) return currentLocationPromise
+  if (!navigator.geolocation) return Promise.resolve(null)
+
+  currentLocationPromise = new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }
+        if (position.coords.accuracy != null) {
+          location.accuracy = position.coords.accuracy
+        }
+        currentLocation.value = location
+        resolve(location)
+      },
+      () => resolve(null),
+      { timeout: 5000, maximumAge: 600000 },
+    )
+  }).finally(() => {
+    currentLocationPromise = null
+  })
+
+  return currentLocationPromise
 }
 
 async function loadSessions() {
@@ -52,9 +88,6 @@ async function loadSessions() {
   try {
     sessions.value = await getSessions()
     authenticated.value = true
-    if (!selectedSession.value && sessions.value.length) {
-      await selectSession(sessions.value[0])
-    }
   } catch (requestError) {
     if (requestError?.response?.status === 401) logout()
     error.value = errorMessage(requestError)
@@ -77,17 +110,46 @@ async function submitLogin() {
   }
 }
 
-async function addSession() {
-  const title = newSessionTitle.value.trim()
-  if (!title) return
+function startNewSession() {
+  selectedSession.value = null
+  messages.value = []
+  relatedHeritages.value = []
+  error.value = ''
+}
 
-  try {
-    const session = await createSession({ title })
-    sessions.value.unshift(session)
-    newSessionTitle.value = ''
-    await selectSession(session)
-  } catch (requestError) {
-    error.value = errorMessage(requestError)
+function createTitleFromMessage(content) {
+  return content.length > 30 ? `${content.slice(0, 30)}...` : content
+}
+
+function parseSourceContextPath(path) {
+  if (!path) return {}
+  const heritageMatch = path.match(/^\/heritages\/([^/?#]+)/)
+  if (heritageMatch) {
+    return { page_type: 'heritage_detail', heritage_id: heritageMatch[1] }
+  }
+
+  const guideMatch = path.match(/^\/guides\/([^/?#]+)/)
+  if (guideMatch) {
+    return { page_type: 'guide_detail', guide_id: guideMatch[1] }
+  }
+
+  if (path.startsWith('/guides')) return { page_type: 'guide_list' }
+  if (path.startsWith('/profiles')) return { page_type: 'profile_list' }
+  if (path === '/' || path.startsWith('/?')) return { page_type: 'heritage_list' }
+  return { page_type: 'unknown' }
+}
+
+function getSourceContext() {
+  const sourcePath = String(route.query.from || '')
+  if (!sourcePath) return null
+  const storedContext = getChatbotPageContext(sourcePath) || {}
+
+  return {
+    source_path: sourcePath,
+    source_title: storedContext.source_title || document.title,
+    activated_at: new Date().toISOString(),
+    ...parseSourceContextPath(sourcePath),
+    ...storedContext,
   }
 }
 
@@ -105,13 +167,35 @@ async function selectSession(session) {
 
 async function submitQuestion() {
   const content = question.value.trim()
-  if (!content || !selectedSession.value || sending.value) return
+  if (!content || sending.value) return
 
   error.value = ''
   sending.value = true
   question.value = ''
   try {
-    const result = await sendMessage(selectedSession.value.session_id, content)
+    const location = await getCurrentLocation()
+    const sourceContext = getSourceContext()
+    let session = selectedSession.value
+
+    if (!session) {
+      const payload = {
+        title: createTitleFromMessage(content),
+      }
+      if (location) payload.current_location = location
+      if (sourceContext) payload.source_context = sourceContext
+
+      session = await createSession(payload)
+      sessions.value.unshift(session)
+      selectedSession.value = session
+      messages.value = []
+    }
+
+    const result = await sendMessage(
+      session.session_id,
+      content,
+      location,
+      sourceContext,
+    )
     messages.value.push(result.user_message, result.assistant_message)
     relatedHeritages.value = result.related_heritages ?? []
     await scrollToBottom()
@@ -162,39 +246,27 @@ onMounted(() => {
             <button class="text-xs text-subtext transition hover:text-primary" @click="logout">로그아웃</button>
           </div>
         </div>
-        <form class="mt-7 flex gap-2" @submit.prevent="addSession">
-          <input v-model="newSessionTitle" required maxlength="100" placeholder="새 대화 제목" class="min-w-0 flex-1 rounded-full border border-line bg-bg/60 px-4 py-2.5 text-sm text-text outline-none transition placeholder:text-subtext/55 focus:border-teal focus:bg-white focus:ring-4 focus:ring-teal/10" />
-          <button class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-coral text-xl leading-none text-white transition hover:brightness-105 active:scale-95" aria-label="새 대화 만들기">+</button>
-        </form>
+        <button class="mt-7 w-full rounded-full bg-coral px-4 py-2.5 text-sm font-medium text-white transition hover:brightness-105 active:scale-95" @click="startNewSession">
+          새 대화 시작
+        </button>
         <div class="mt-5 space-y-2">
           <button v-for="session in sessions" :key="session.session_id" class="w-full rounded-2xl border px-4 py-3 text-left transition" :class="selectedSession?.session_id === session.session_id ? 'border-teal bg-teal/10 text-primary' : 'border-transparent bg-bg/70 text-text hover:border-line hover:bg-surface'" @click="selectSession(session)">
             <span class="block truncate text-sm font-medium">{{ session.title }}</span>
             <span class="mt-1 block text-[11px] text-subtext">세션 #{{ session.session_id }}</span>
           </button>
-          <p v-if="!sessions.length" class="px-2 py-8 text-center text-sm text-subtext">새 대화를 만들어 주세요.</p>
+          <p v-if="!sessions.length" class="px-2 py-8 text-center text-sm text-subtext">첫 질문을 보내면 새 대화가 만들어집니다.</p>
         </div>
       </aside>
 
       <section class="flex min-h-[calc(100vh-8rem)] min-w-0 flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-sm">
         <header class="border-b border-line bg-surface/90 px-6 py-5 backdrop-blur">
-          <h2 class="font-serif text-2xl text-text">{{ selectedSession?.title ?? '대화를 선택해 주세요' }}</h2>
+          <h2 class="font-serif text-2xl text-text">{{ activeSessionTitle }}</h2>
           <p class="mt-1 text-xs text-subtext">OpenAI 기반 답변과 관련 문화유산 정보를 확인합니다.</p>
         </header>
         <div v-if="error" class="mx-6 mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>
 
         <div ref="messagePanel" class="flex-1 overflow-y-auto bg-bg/45 px-5 py-6 sm:px-8">
-          <div v-if="!selectedSession" class="grid h-full place-items-center text-center">
-            <div>
-              <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-teal/10 text-teal">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-                </svg>
-              </div>
-              <p class="font-serif text-xl text-text">대화를 선택해 주세요</p>
-              <p class="mt-2 text-sm text-subtext">왼쪽에서 대화를 선택하거나 새로 만들어 보세요.</p>
-            </div>
-          </div>
-          <div v-else class="mx-auto max-w-4xl space-y-5">
+          <div class="mx-auto max-w-4xl space-y-5">
             <div v-if="!messages.length" class="rounded-3xl border border-dashed border-line bg-surface/80 p-7">
               <h3 class="font-serif text-xl text-text">이런 질문으로 시작해 보세요</h3>
               <div class="mt-4 flex flex-wrap gap-2">
@@ -234,7 +306,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <footer v-if="selectedSession" class="border-t border-line bg-surface p-4 sm:px-8">
+        <footer class="border-t border-line bg-surface p-4 sm:px-8">
           <form class="mx-auto flex max-w-4xl gap-3" @submit.prevent="submitQuestion">
             <textarea v-model="question" rows="1" maxlength="2000" placeholder="궁금한 문화유산이나 여행 조건을 입력하세요" class="min-h-12 flex-1 resize-none rounded-2xl border border-line bg-bg/60 px-4 py-3 text-sm text-text outline-none transition placeholder:text-subtext/55 focus:border-teal focus:bg-white focus:ring-4 focus:ring-teal/10" @keydown.enter.exact.prevent="submitQuestion"></textarea>
             <button :disabled="sending || !question.trim()" class="rounded-full bg-coral px-6 text-sm font-medium text-white transition hover:brightness-105 active:scale-95 disabled:opacity-40">{{ sending ? '전송 중…' : '전송' }}</button>

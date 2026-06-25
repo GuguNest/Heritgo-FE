@@ -1,14 +1,16 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getGuide } from '@/api/guide'
 import { getHeritage } from '@/api/heritage'
 import { LANGUAGES, labelOf } from '@/api/profile'
 import GuideAudioPlayer from '@/components/GuideAudioPlayer.vue'
+import { setChatbotPageContext } from '@/utils/chatbotContext'
 
 const props = defineProps({
   guideId: { type: [Number, String], required: true },
 })
+const route = useRoute()
 const router = useRouter()
 
 const guide = ref(null)
@@ -40,6 +42,41 @@ async function load() {
 
 onMounted(load)
 watch(() => props.guideId, load)
+
+watch(
+  [guide, heritage],
+  ([guideValue, heritageValue]) => {
+    if (!guideValue) return
+
+    setChatbotPageContext(route.fullPath, {
+      page_type: 'guide_detail',
+      source_title: heritageValue?.name || `Guide #${guideValue.id}`,
+      guide_id: guideValue.id ?? props.guideId,
+      heritage_id: guideValue.heritage,
+      guide: {
+        id: guideValue.id ?? props.guideId,
+        heritage_id: guideValue.heritage,
+        language_code: guideValue.language_code,
+        language_label: labelOf(LANGUAGES, guideValue.language_code),
+        content: guideValue.content,
+        audio_url: guideValue.audio_url,
+        created: guideValue.created,
+      },
+      heritage: heritageValue
+        ? {
+            id: heritageValue.heritage_id ?? guideValue.heritage,
+            name: heritageValue.name,
+            category_name: heritageValue.category_name,
+            location: heritageValue.location || heritageValue.address,
+            address: heritageValue.address,
+            description: heritageValue.description,
+            image_url: heritageValue.image_url,
+          }
+        : null,
+    })
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

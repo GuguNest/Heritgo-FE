@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { attachAuthRefresh, saveAccessToken } from '@/api/auth'
 
 const api = axios.create({
   baseURL: '/api',
@@ -7,6 +8,8 @@ const api = axios.create({
   timeout: 40000,
 })
 
+attachAuthRefresh(api)
+
 function authHeaders() {
   const token = localStorage.getItem('heritgo_access_token')
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -14,7 +17,7 @@ function authHeaders() {
 
 export async function login(payload) {
   const { data } = await api.post('/users/login/', payload)
-  localStorage.setItem('heritgo_access_token', data.access)
+  saveAccessToken(data.access)
   localStorage.setItem('heritgo_user', JSON.stringify(data.user))
   return data
 }
@@ -55,10 +58,19 @@ export async function getMessages(sessionId) {
   return data
 }
 
-export async function sendMessage(sessionId, content) {
+export async function sendMessage(
+  sessionId,
+  content,
+  currentLocation = null,
+  sourceContext = null,
+) {
+  const payload = { content }
+  if (currentLocation) payload.current_location = currentLocation
+  if (sourceContext) payload.source_context = sourceContext
+
   const { data } = await api.post(
     `/chatbots/sessions/${sessionId}/messages/`,
-    { content },
+    payload,
     { headers: authHeaders() },
   )
   return data
